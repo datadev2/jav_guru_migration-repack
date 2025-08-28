@@ -1,0 +1,7 @@
+services:
+  #<baddiesonly>:
+    image: #<abelodev/video-download:baddiesonly-tv>
+    container_name: #<baddiesonly-tv>
+    env_file:
+      - .env
+    command: "celery -A app.tasks worker --loglevel=INFO --pool=prefork --concurrency=4"
