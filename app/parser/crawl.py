@@ -1,18 +1,36 @@
-from app.parser.driver import SeleniumDriver
-from app.parser.interactions import SeleniumService
-from app.parser.service import Parser
+import asyncio
+
+from app.config import config
+from app.db.database import init_mongo
 from app.logger import init_logger
+from app.parser.service import Parser
+from app.parser.sites.guru import GuruAdapter
 
 
 logger = init_logger()
 
+SITE_TO_ADAPTER = {
+    "guru": GuruAdapter,
+}
 
-def run():
-    with SeleniumDriver(headless=False) as driver:
-        selenium = SeleniumService(driver)
-        parser = Parser(selenium)
-        parser.parse_videos(" ")
-        logger.info("Parser launched successfully!")
+site = config.SITE_NAME
+if site not in SITE_TO_ADAPTER:
+    raise RuntimeError(f"No adapter for site: {site}")
+
+adapter = SITE_TO_ADAPTER[site]()
+
+async def run_pipeline():
+    await init_mongo()
+    try:
+        with Parser(adapter=adapter, headless=False) as parser:
+            parser.init_adblock()
+            parser.parse_videos()
+            logger.info("Pipeline finished successfully.")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        logger.error("Pipeline failed: {}", e, exc_info=True)
+
 
 if __name__ == "__main__":
-    run()
+    asyncio.run(run_pipeline())
