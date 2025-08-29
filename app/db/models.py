@@ -6,6 +6,7 @@ from pydantic import Field, HttpUrl
 class Studio(Document):
     name: str
     source_url: HttpUrl | None = None
+    site: str = Field(default="unknown")
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
@@ -17,6 +18,7 @@ class Model(Document):
     type: str = Field(default="actress")
     profile_url: HttpUrl | None = None
     image_url: HttpUrl | None = None
+    site: str = Field(default="unknown")
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
@@ -26,6 +28,7 @@ class Model(Document):
 class Category(Document):
     name: str
     source_url: HttpUrl | None = None
+    site: str = Field(default="unknown")
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
@@ -35,6 +38,7 @@ class Category(Document):
 class Tag(Document):
     name: str
     source_url: HttpUrl | None = None
+    site: str = Field(default="unknown")
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
@@ -45,8 +49,13 @@ class Video(Document):
     title: str
     jav_code: str
     page_link: HttpUrl
-    site_download_link: HttpUrl | None = None
+    site: str = Field(default="unknown")
 
+    site_download_link_720p: HttpUrl | None = None
+    site_download_link_1080p: HttpUrl | None = None
+    site_download_link_2k: HttpUrl | None = None
+    site_download_link_4k: HttpUrl | None = None
+    
     s3_path: str | None = None
     format: str | None = None
     file_size: int | None = None
