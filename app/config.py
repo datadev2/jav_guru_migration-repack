@@ -23,8 +23,10 @@ class Config(BaseSettings):
 
     CHUNK: int = Field(default=4096)
 
-    DRIVER: str = Field(default="")
-    AD_BLOCK: str = Field(default="")
+    DRIVER: str
+    AD_BLOCK: str
+
+    SITE_NAME: str = Field(default="guru")
 
     @property
     def database_dsn(self) -> MongoDsn:

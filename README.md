@@ -1,6 +1,3 @@
-Minimalistic async template for tasks like "parse → download → upload → save".
---
-
 ## Run
 ```bash
 cp .env.template .env
