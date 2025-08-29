@@ -1,34 +1,73 @@
 from datetime import datetime
-from beanie import Document
+from beanie import Document, Link
 from pydantic import Field, HttpUrl
+
+
+class Studio(Document):
+    name: str
+    source_url: HttpUrl | None = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = "studios"
+
+
+class Model(Document):
+    name: str
+    type: str = Field(default="actress")
+    profile_url: HttpUrl | None = None
+    image_url: HttpUrl | None = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = "models"
+
+
+class Category(Document):
+    name: str
+    source_url: HttpUrl | None = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = "categories"
+
+
+class Tag(Document):
+    name: str
+    source_url: HttpUrl | None = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = "tags"
 
 
 class Video(Document):
     title: str
-    video_code: str
+    jav_code: str
     page_link: HttpUrl
-    site_download_link: HttpUrl | None = Field(default=None)
-    s3_path: str | None = Field(default=None)
-    format: str | None = Field(default=None)
-    file_size: int | None = Field(default=None)
-    file_hash_md5: str | None = Field(default=None)
-    file_name: str | None = Field(default=None)
-    width: int | None = Field(default=None)
-    height: int | None = Field(default=None)
+    site_download_link: HttpUrl | None = None
 
-    thumbnail_url: HttpUrl | None = Field(default=None)
+    s3_path: str | None = None
+    format: str | None = None
+    file_size: int | None = None
+    file_hash_md5: str | None = None
+    file_name: str | None = None
+    width: int | None = None
+    height: int | None = None
 
-    categories: list[str] | None = Field(default=None)
-    tags: list[str] | None = Field(default=None)
+    thumbnail_url: HttpUrl | None = None
 
-    actresses: list[str] | None = Field(default=None)
-    actors: list[str] | None = Field(default=None)
+    categories: list[Link[Category]] = Field(default_factory=list)
+    tags: list[Link[Tag]] = Field(default_factory=list)
 
-    studio: str | None = Field(default=None)
-    director: str | None = Field(default=None)
-    release_date: datetime | None = Field(default=None)
-    video_type: str | None = Field(default=None)   # censored / uncensored
-    runtime_minutes: int | None = Field(default=None)
+    actresses: list[Link[Model]] = Field(default_factory=list)
+    actors: list[Link[Model]] = Field(default_factory=list)
+    directors: list[Link[Model]] = Field(default_factory=list)
+
+    studio: Link[Studio] | None = None
+    release_date: datetime | None = None
+    uncensored: bool = Field(default=False)
+    runtime_minutes: int | None = None
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -36,14 +75,4 @@ class Video(Document):
         name = "videos"
 
 
-class Category(Document):
-    name: str
-    source_url: HttpUrl | None = None
-    is_parsed: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-    class Settings:
-        name = "categories"
-
-
-Collections = [Video, Category]
+Collections = [Video, Model, Studio, Category, Tag]
