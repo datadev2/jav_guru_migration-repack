@@ -12,9 +12,9 @@ extend-select = ["E501"]
 line_length = 120
 
 [tool.poetry]
-name = "luxuretv-parser"
+name = "javguru-parser"
 version = "0.1.0"
-description = "Parser and downloader for LuxureTV"
+description = "Parser and downloader for Jav Guru"
 authors = ["Mark Safin <samangelofw@gmail.com>"]
 # readme = "README.md"
 packages = [{ include = "app" }]
