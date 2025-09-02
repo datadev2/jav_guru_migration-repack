@@ -46,3 +46,17 @@ class SeleniumService:
         except Exception as e:
             logger.warning(f"Elements not found: {selector} | {e}")
             return []
+
+    def find_first(self, xpath: str) -> WebElement | None:
+        """Find a single element by XPath, return None if not found."""
+        try:
+            return self.driver.find_element(By.XPATH, xpath)
+        except Exception:
+            return None
+
+    def find_elements(self, xpath: str) -> list[WebElement]:
+        """Find multiple elements by XPath, return empty list if not found."""
+        try:
+            return self.driver.find_elements(By.XPATH, xpath)
+        except Exception:
+            return []
