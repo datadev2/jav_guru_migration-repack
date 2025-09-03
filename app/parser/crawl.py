@@ -24,8 +24,12 @@ async def run_pipeline():
     try:
         with Parser(adapter=adapter, headless=False) as parser:
             parser.init_adblock()
-            await parser.get_videos(max_pages=5)
-            await parser.get_videos_data(max_videos=5)
+            # await parser.get_categories()
+            # await parser.get_tags()
+            # await parser.get_models()
+            await parser.get_studios()
+            await parser.get_videos(max_pages=2)
+            # await parser.get_videos_data(max_videos=5)
             logger.info("Pipeline finished successfully.")
     except Exception as e:
         import traceback

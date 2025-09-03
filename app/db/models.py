@@ -1,6 +1,6 @@
 from datetime import datetime
 from beanie import Document, Link
-from pydantic import Field, HttpUrl
+from pydantic import Field, BaseModel, HttpUrl
 
 
 class Studio(Document):
@@ -83,5 +83,20 @@ class Video(Document):
     class Settings:
         name = "videos"
 
+# ---------- Scraper Schemas ----------
+class ParsedVideo(BaseModel):
+    title: str
+    jav_code: str
+    page_link: HttpUrl
+    site: str
+
+    thumbnail_url: HttpUrl | None = None
+    release_date: str | None = None
+    categories: list[str] = []
+    tags: list[str] = []
+    directors: list[str] = []
+    actresses: list[str] = []
+    studio: str | None = None
+    uncensored: bool = False
 
 Collections = [Video, Model, Studio, Category, Tag]

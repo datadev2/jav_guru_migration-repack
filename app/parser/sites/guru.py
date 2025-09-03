@@ -1,6 +1,6 @@
 from typing import Optional
 from selenium.webdriver.common.by import By
-from app.db.models import Video, Category, ParsedVideo
+from app.db.models import Video, Category, Studio, ParsedVideo
 from app.parser.interactions import SeleniumService
 from app.logger import init_logger
 
@@ -10,17 +10,33 @@ logger = init_logger()
 class GuruAdapter:
     site_name = "guru"
     BASE_URL = "https://jav.guru/"
+    STUDIO_URL = "https://jav.guru/jav-makers-list/"
 
-    def _open_video_tab(self, url: str) -> None:
-        """Opens the video URL in a new browser tab and switches to it."""
-        self.selenium.driver.execute_script(f"window.open('{url}', '_blank');")
-        self.selenium.driver.switch_to.window(self.selenium.driver.window_handles[-1])
+    def _open_video_tab(self, selenium: SeleniumService, url: str) -> None:
+        selenium.driver.execute_script(f"window.open('{url}', '_blank');")
+        selenium.driver.switch_to.window(selenium.driver.window_handles[-1])
 
-    def _close_video_tab(self, main_window: str) -> None:
-        """Closes the current browser tab and switches back to the main one."""
-        self.selenium.driver.close()
-        self.selenium.driver.switch_to.window(main_window)
+    def _close_video_tab(self, selenium: SeleniumService, main_window: str) -> None:
+        selenium.driver.close()
+        selenium.driver.switch_to.window(main_window)
 
+    def parse_studios(self, selenium: SeleniumService) -> list[Studio]:
+        selenium.get(self.STUDIO_URL, (By.XPATH, "//main[@id='main']//ul/li"))
+
+        studios: dict[str, Studio] = {}
+        els = selenium.find_elements("//main[@id='main']//ul/li/a")
+        for el in els:
+            try:
+                name = el.text.strip()
+                href = el.get_attribute("href")
+                if name and name not in studios:
+                    studios[name] = Studio(name=name, source_url=href, site=self.site_name)
+                    logger.info(f"[GuruAdapter] Found studio: {name}")
+            except Exception as e:
+                logger.warning(f"[GuruAdapter] Failed to parse studio element: {e}")
+
+        return list(studios.values())
+    
     def parse_videos(self, selenium: SeleniumService) -> list[ParsedVideo]:
         videos: list[ParsedVideo] = []
         page = 1
@@ -66,7 +82,6 @@ class GuruAdapter:
 
         logger.info(f"[GuruAdapter] Collected {len(videos)} video links")
         return videos
-
 
     def parse_video(self, selenium: SeleniumService, video: ParsedVideo) -> ParsedVideo:
         selenium.get(video.page_link.unicode_string(), (By.XPATH, "//div[contains(@class,'inside-article')]"))
