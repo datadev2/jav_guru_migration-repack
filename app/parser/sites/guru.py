@@ -1,6 +1,6 @@
 from typing import Optional
 from selenium.webdriver.common.by import By
-from app.db.models import Video, Category, Studio, ParsedVideo
+from app.db.models import Video, Category, Studio, ParsedVideo, Tag
 from app.parser.interactions import SeleniumService
 from app.logger import init_logger
 
@@ -11,6 +11,7 @@ class GuruAdapter:
     site_name = "guru"
     BASE_URL = "https://jav.guru/"
     STUDIO_URL = "https://jav.guru/jav-makers-list/"
+    TAG_URL = "https://jav.guru/jav-tags-list/"
 
     def _open_video_tab(self, selenium: SeleniumService, url: str) -> None:
         selenium.driver.execute_script(f"window.open('{url}', '_blank');")
@@ -36,6 +37,25 @@ class GuruAdapter:
                 logger.warning(f"[GuruAdapter] Failed to parse studio element: {e}")
 
         return list(studios.values())
+    
+    def parse_tags(self, selenium: SeleniumService) -> list[Tag]:
+        selenium.get(self.TAG_URL, (By.XPATH, "//div[@id='content']//li/a[@rel='tag']"))
+
+        tags: dict[str, Tag] = {}
+        els = selenium.find_elements("//div[@id='content']//li/a[@rel='tag']")
+        for el in els:
+            try:
+                name = el.text.strip()
+                href = el.get_attribute("href")
+                if "(" in name:
+                    name = name.split("(")[0].strip()
+                if name and name not in tags:
+                    tags[name] = Tag(name=name, source_url=href, site=self.site_name)
+                    logger.info(f"[GuruAdapter] Found tag: {name}")
+            except Exception as e:
+                logger.warning(f"[GuruAdapter] Failed to parse tag element: {e}")
+
+        return list(tags.values())
     
     def parse_videos(self, selenium: SeleniumService) -> list[ParsedVideo]:
         videos: list[ParsedVideo] = []

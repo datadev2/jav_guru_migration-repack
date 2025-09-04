@@ -3,7 +3,7 @@ from beanie import Document
 from beanie.operators import In
 
 from app.db.database import init_mongo
-from app.db.models import Category, Video, Studio
+from app.db.models import Category, Video, Studio, Tag
 from app.parser.driver import SeleniumDriver
 from app.parser.interactions import SeleniumService
 from app.parser.base import ParserAdapter
@@ -72,6 +72,21 @@ class Parser(SeleniumDriver):
             build_fn=lambda studio: studio,
         )
 
+    async def get_tags(self) -> int:
+        """
+        Crawl site and insert unique tags into MongoDB.
+        """
+        await init_mongo()
+        raw_tags = self.adapter.parse_tags(self.selenium)
+
+        logger.info(f"[Parser] Found {len(raw_tags)} raw tags from {self.adapter.site_name}")
+
+        return await self._insert_unique(
+            Tag,
+            raw_tags,
+            key_fn=lambda tag: tag.name,
+            build_fn=lambda tag: tag,
+        )
     
     async def get_videos(self, max_pages: int | None = None):
         await init_mongo()
