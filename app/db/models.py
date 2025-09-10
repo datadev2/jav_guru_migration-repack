@@ -51,6 +51,7 @@ class Video(Document):
     page_link: HttpUrl
     site: str = Field(default="unknown")
 
+    site_download_link_st: HttpUrl | None = None
     site_download_link_720p: HttpUrl | None = None
     site_download_link_1080p: HttpUrl | None = None
     site_download_link_2k: HttpUrl | None = None
