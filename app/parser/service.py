@@ -3,7 +3,7 @@ from beanie import Document
 from beanie.operators import In
 
 from app.db.database import init_mongo
-from app.db.models import Category, Video, Studio, Tag
+from app.db.models import Category, Video, Studio, Tag, Model
 from app.parser.driver import SeleniumDriver
 from app.parser.interactions import SeleniumService
 from app.parser.base import ParserAdapter
@@ -87,7 +87,40 @@ class Parser(SeleniumDriver):
             key_fn=lambda tag: tag.name,
             build_fn=lambda tag: tag,
         )
-    
+
+    async def get_categories(self) -> int:
+        """
+        Crawl site and insert unique categories into MongoDB.
+        For Guru: categories == tags (same source).
+        """
+        await init_mongo()
+        raw_categories = self.adapter.parse_categories(self.selenium)
+
+        logger.info(f"[Parser] Found {len(raw_categories)} raw categories from {self.adapter.site_name}")
+
+        return await self._insert_unique(
+            Category,
+            raw_categories,
+            key_fn=lambda c: c.name,
+            build_fn=lambda c: c,
+        )
+
+    async def get_models(self) -> int:
+        """
+        Crawl site and insert unique models (actresses) into MongoDB.
+        """
+        await init_mongo()
+        raw_models = self.adapter.parse_models(self.selenium)
+
+        logger.info(f"[Parser] Found {len(raw_models)} raw models from {self.adapter.site_name}")
+
+        return await self._insert_unique(
+            Model,
+            raw_models,
+            key_fn=lambda m: m.name,
+            build_fn=lambda m: m,
+        )
+
     async def get_videos(self, max_pages: int | None = None):
         await init_mongo()
         raw_videos = self.adapter.parse_videos(self.selenium)
@@ -129,16 +162,48 @@ class Parser(SeleniumDriver):
 
         for video in videos:
             parsed = self.adapter.parse_video(self.selenium, video)
-            if parsed:
-                video.title = parsed.title
-                video.thumbnail_url = parsed.thumbnail_url
-                video.jav_code = parsed.jav_code
-                video.release_date = parsed.release_date
-                video.categories = parsed.categories
-                video.tags = parsed.tags
-                video.directors = parsed.directors
-                video.actresses = parsed.actresses
-                video.studio = parsed.studio
-                video.uncensored = parsed.uncensored
-                await video.save()
-                logger.info(f"[Parser] Updated {video.jav_code} | {video.title[:50]}...")
+            if not parsed:
+                continue
+
+            video.title = parsed.title
+            video.thumbnail_url = parsed.thumbnail_url
+            video.jav_code = parsed.jav_code
+            video.release_date = parsed.release_date
+            video.uncensored = parsed.uncensored
+
+            if parsed.categories:
+                video.categories = await Category.find(
+                    In(Category.name, parsed.categories),
+                    Category.site == self.adapter.site_name
+                ).to_list()
+
+            if parsed.tags:
+                video.tags = await Tag.find(
+                    In(Tag.name, parsed.tags),
+                    Tag.site == self.adapter.site_name
+                ).to_list()
+
+            if parsed.directors:
+                video.directors = await Model.find(
+                    In(Model.name, parsed.directors),
+                    Model.type == "director",
+                    Model.site == self.adapter.site_name
+                ).to_list()
+
+            if parsed.actresses:
+                video.actresses = await Model.find(
+                    In(Model.name, parsed.actresses),
+                    Model.type == "actress",
+                    Model.site == self.adapter.site_name
+                ).to_list()
+
+            if parsed.studio:
+                studio = await Studio.find_one(
+                    Studio.name == parsed.studio,
+                    Studio.site == self.adapter.site_name
+                )
+                if studio:
+                    video.studio = studio
+
+            await video.save()
+            logger.info(f"[Parser] Updated {video.jav_code} | {video.title[:50]}...")
