@@ -26,12 +26,13 @@ site = config.SITE_NAME
 if site not in SITE_TO_ADAPTER:
     raise RuntimeError(f"No adapter for site: {site}")
 
+adapter = SITE_TO_ADAPTER[site]()
 AdapterCls = SITE_TO_ADAPTER[site]
 
 async def run_parse():
     await init_mongo()
     try:
-        with Parser(adapter=AdapterCls, headless=False) as parser:
+        with Parser(adapter=adapter, headless=False) as parser:
             parser.init_adblock()
             # --
             # await parser.get_categories()
@@ -56,5 +57,5 @@ async def run_download(limit=1):
 
         
 if __name__ == "__main__":
-    # asyncio.run(run_parse())
+    asyncio.run(run_parse())
     asyncio.run(run_download())
