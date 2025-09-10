@@ -1,60 +1,129 @@
 import csv
-import io
-from typing import Dict, List, Type
+from typing import Dict, List, Type, Iterable
+import aiohttp
+import re
+import urllib.parse
+import hashlib
+from selenium.webdriver.common.by import By
 
 from pydantic import BaseModel
 from pymongo.errors import DuplicateKeyError
+from io import BytesIO, StringIO
 
 from app.config import config
 from app.db.models import Video
 from app.db.exports import VideoCSV
-from app.download.downloader import Downloader, DownloadedFile
+from app.parser.interactions import SeleniumService
+from app.parser.sites.guru import GuruAdapter
 from app.download.exceptions import DownloadFailedException
-from app.infra.s3 import S3Client, s3
+from app.infra.s3 import s3
 from app.logger import init_logger
 
 
 logger = init_logger()
 
-class DownloadService:
-    def __init__(
-        self,
-        s3_client: S3Client = s3,
-        downloader_cls: Type[Downloader] = Downloader,
-    ):
-        self._s3 = s3_client
-        self._downloader_cls = downloader_cls
 
-    async def __call__(self, video: Video, *, show_progress: bool = False) -> None:
-        try:
-            file = await self._download_file(video.site_download_link, show_progress)
-            s3_path = self._upload_path(video.name)
 
-            await self._upload_to_s3(file, s3_path)
-            await self._save_video(video, file.md5, s3_path)
+class GuruDownloader:
+    """
+    Mongo -> page_link -> открыть -> _extract_video_src() -> скачать -> обновить Video -> Загрузить в S3
+    """
 
-            logger.success(f"Saved: {video.name} → {s3_path}")
-        except DownloadFailedException as e:
-            logger.error(f"Download failed: {video.name} → {e}")
-        except DuplicateKeyError as e:
-            logger.warning(f"Duplicate video key: {video.name} → {e}")
+    def __init__(self, selenium: SeleniumService, parser: GuruAdapter) -> None:
+        self.selenium = selenium
+        self.parser = parser
 
-    async def _download_file(self, link: str, show_progress: bool) -> DownloadedFile:
-        downloader = self._downloader_cls(disable_progress=not show_progress)
-        return await downloader.fetch(link)
+    async def _download_to_buffer(self, url: str, timeout_sec: int = 3600) -> BytesIO:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout_sec)) as session:
+            async with session.get(url, ssl=False) as response:
+                if response.status != 200:
+                    raise DownloadFailedException(f"HTTP {response.status} {url}")
 
-    async def _upload_to_s3(self, file: DownloadedFile, path: str) -> None:
-        await self._s3.put_object(file.content, path)
-
-    async def _save_video(self, video: Video, file_hash: str, path: str) -> None:
-        video.s3_path = path
-        video.file_hash_md5 = file_hash
-        await video.save()
+                buf = BytesIO()
+                async for chunk in response.content.iter_chunked(64 * 1024):
+                    buf.write(chunk)
+                buf.seek(0)
+                return buf
 
     @staticmethod
-    def _upload_path(name: str) -> str:
-        filename = name.replace(" ", "") + ".mp4"
-        return f"{config.S3_FOLDER}/{filename}"
+    def _name_from_url(url: str) -> str:
+        name = url.split("/")[-1].split("?")[0].strip()
+        name = urllib.parse.unquote(name)
+        name = re.sub(r"[^A-Za-z0-9._-]", "_", name)
+        return name or f"{hashlib.md5(url.encode()).hexdigest()}.mp4"
+
+    # --- core ---
+    async def download_one(self, video: Video) -> bool:
+        page_url = str(video.page_link)
+        logger.info(f"DL {video.jav_code} | {page_url}")
+
+        try:
+            self.selenium.get(page_url, wait_selector=(By.XPATH, "//div[contains(@class,'inside-article')]"))
+            src = self.parser._extract_video_src(self.selenium, timeout_sec=2)
+            if not src:
+                logger.error(f"no video src {page_url}")
+                return False
+
+            buf = await self._download_to_buffer(src)
+            if not buf.getbuffer().nbytes:
+                logger.error(f"empty buffer {page_url}")
+                return False
+
+            file_size = buf.getbuffer().nbytes
+            md5 = hashlib.md5(buf.getbuffer()).hexdigest()
+
+            s3_filename = self._name_from_url(src)
+            s3_key = f"{config.S3_FOLDER}/{s3_filename}"
+            await s3.put_object(buf, s3_key)
+
+            video.file_name = s3_filename
+            video.s3_path = f"https://{config.S3_ENDPOINT}/{config.S3_BUCKET}/{config.S3_FOLDER}/{s3_filename}"
+            video.file_size = file_size
+            video.file_hash_md5 = md5
+            await video.save()
+
+            logger.success(f"OK {s3_filename} | {file_size} bytes")
+            return True
+
+        except (DownloadFailedException, DuplicateKeyError) as e:
+            logger.error(f"{type(e).__name__}: {e}")
+        except Exception as e:
+            logger.exception(e)
+
+        return False
+
+    async def download_from_db(
+        self,
+        limit: int | None = None,
+        only_missing: bool = True,
+        ids: Iterable[str] | None = None,
+    ) -> int:
+        if ids:
+            videos = [video async for video in Video.find({"_id": {"$in": list(ids)}})]
+        else:
+            query = Video.find(Video.file_size == None) if only_missing else Video.find({})
+            if limit:
+                query = query.limit(limit)
+            else:
+                query = query.limit(50)
+            videos = await query.to_list()
+
+        total, success_count = len(videos), 0
+        logger.info(f"К обработке: {total}")
+
+        for i, video in enumerate(videos, start=1):
+            logger.info(f"[{i}/{total}] {video.jav_code} | {str(video.page_link)}")
+            if await self.download_one(video):
+                success_count += 1
+
+        return success_count
+
+
+async def download_fresh_videos(selenium: SeleniumService, parser: GuruAdapter, limit: int | None = None) -> None:
+    logger.info("Загрузка свежеспарсенных видео...")
+    downloader = GuruDownloader(selenium, parser)
+    await downloader.download_from_db(limit=limit, only_missing=True)
+
 
 class CSVDump:
     def __init__(self, schema: Type[BaseModel]):
@@ -66,7 +135,7 @@ class CSVDump:
 
     @staticmethod
     def _make_csv(rows: List[Dict], include_headers: bool, delimiter: str) -> str:
-        output = io.StringIO()
+        output = StringIO()
         writer = csv.DictWriter(output, fieldnames=rows[0].keys(), delimiter=delimiter)
         if include_headers:
             writer.writeheader()
