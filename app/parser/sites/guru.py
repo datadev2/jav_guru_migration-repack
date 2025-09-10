@@ -25,81 +25,107 @@ class GuruAdapter:
         selenium.driver.close()
         selenium.driver.switch_to.window(main_window)
 
-    def _extract_video_src(self, selenium: SeleniumService, timeout_sec: int = 15) -> str | None:
-        current_window = selenium.driver.current_window_handle
-        old_handles = selenium.driver.window_handles
+    def _extract_video_src(self, selenium: SeleniumService, timeout_sec: int = 300) -> str | None:
         try:
-            buttons = selenium.driver.find_elements(By.XPATH, "//a[contains(text(),'STREAM ST')]")
-            logger.info(f"[GuruAdapter] Found {len(buttons)} STREAM ST buttons in DOM")
-            btn = next((b for b in buttons if b.is_displayed()), None)
+            # === Step 1: STREAM ST ===
+            logger.info("[GuruAdapter] Step 1: ищем кнопку STREAM ST")
+            btns = selenium.find_elements("//a[contains(text(),'STREAM ST')]")
+            if not btns:
+                logger.error("[GuruAdapter] STREAM ST кнопка не найдена")
+                return None
+
+            btn = next((b for b in btns if b.is_displayed()), None)
             if not btn:
-                logger.error("[GuruAdapter] No visible STREAM ST button found")
+                logger.error("[GuruAdapter] STREAM ST кнопка невидима")
                 return None
 
             selenium.driver.execute_script("arguments[0].click();", btn)
             logger.success("[GuruAdapter] STREAM ST button clicked")
-            time.sleep(20)
 
+            # === Step 2: первый iframe ===
+            logger.info("[GuruAdapter] Step 2: ждём первый iframe")
+            first_iframe = selenium.wait_for_element((By.XPATH, "//iframe[@data-localize]"), timeout=30)
+            if not first_iframe:
+                logger.error("[GuruAdapter] Первый iframe не найден")
+                return None
+            selenium.driver.switch_to.frame(first_iframe)
 
-            WebDriverWait(selenium.driver, timeout_sec).until(
-                lambda d: len(d.window_handles) > len(old_handles)
+            logger.info("[GuruAdapter] Step 2: кликаем .playbutton")
+            play_btn = selenium.wait_for_element((By.XPATH, "//*[contains(@class,'playbutton')]"), timeout=30)
+            if not play_btn:
+                logger.error("[GuruAdapter] .playbutton не найден")
+                selenium.driver.switch_to.default_content()
+                return None
+            selenium.driver.execute_script("arguments[0].click();", play_btn)
+            logger.success("[GuruAdapter] .playbutton clicked")
+
+            selenium.driver.switch_to.default_content()
+
+            # === Step 2.5: реклама ===
+            wait_time = 180
+            logger.info(f"[GuruAdapter] Step 2.5: ждём рекламу до {wait_time} сек")
+            for i in range(wait_time):
+                if i % 10 == 0:
+                    logger.info(f"[GuruAdapter] ... прошло {i} сек ожидания рекламы")
+                time.sleep(1)
+            logger.success("[GuruAdapter] Завершили ожидание рекламы, ищем plyr iframe")
+
+            # === Step 3: второй iframe ===
+            second_iframe = selenium.wait_for_element(
+                (By.XPATH, "//iframe[contains(@src,'searcho/?dr=')]"),
+                timeout=60
             )
-            new_handles = [h for h in selenium.driver.window_handles if h not in old_handles]
-            logger.info(f"[GuruAdapter] {len(new_handles)} new window handles detected: {new_handles}")
+            if not second_iframe:
+                logger.error("[GuruAdapter] Второй iframe не найден")
+                return None
+            selenium.driver.switch_to.frame(second_iframe)
 
-            for handle in new_handles:
-                try:
-                    selenium.driver.switch_to.window(handle)
-                    logger.info(f"[GuruAdapter] Switched to handle={handle}, url={selenium.driver.current_url}")
-                    WebDriverWait(selenium.driver, timeout_sec).until(
-                        lambda d: d.execute_script("return document.readyState") == "complete"
-                    )
-                    logger.debug("[GuruAdapter] Document readyState=complete")
+            # === Step 3: цикл overlay+play + src ===
+            logger.info("[GuruAdapter] Step 3: начинаем долбить overlay+play и читать mainvideo.src")
+            deadline = time.time() + 180
+            src = None
+            attempt = 0
 
-                    video_tag = WebDriverWait(selenium.driver, timeout_sec).until(
-                        EC.presence_of_element_located((By.ID, "mainvideo"))
-                    )
-                    if not video_tag:
-                        logger.warning(f"[GuruAdapter] No <video id='mainvideo'> in {handle}")
-                        continue
+            while time.time() < deadline:
+                attempt += 1
+                logger.info(f"[GuruAdapter] Попытка #{attempt}: overlay+play + чтение src")
 
-                    src = video_tag.get_attribute("src")
-                    logger.info(f"[GuruAdapter] mainvideo src attribute={src}")
+                js_code = """
+                    document.querySelector(".play-overlay")?.click();
+                    setTimeout(() => {
+                        document.querySelector("[data-plyr='play']")?.click();
+                    }, 500);
+                    return document.querySelector('#mainvideo')?.getAttribute('src');
+                """
+                candidate = selenium.driver.execute_script(js_code)
 
-                    if src and src.startswith("//"):
-                        src = "https:" + src
+                if candidate:
+                    src = candidate
+                    logger.success(f"[GuruAdapter] Нашли src на попытке #{attempt}: {src}")
+                    break
 
-                    logger.success(f"[GuruAdapter] Final video src={src}")
+                logger.info("[GuruAdapter] src нет, ждём 8 сек...")
+                time.sleep(8)
 
-                    selenium.driver.close()
-                    logger.debug(f"[GuruAdapter] Closed handle={handle}")
+            if not src:
+                logger.error("[GuruAdapter] src так и не появился")
+                return None
 
-                    selenium.driver.switch_to.window(current_window)
-                    logger.debug("[GuruAdapter] Returned to main window")
-                    return src
+            if src.startswith("//"):
+                src = "https:" + src
 
-                except Exception as e:
-                    logger.warning(f"[GuruAdapter] Failed on handle={handle} | {e}", exc_info=True)
-                    try:
-                        selenium.driver.close()
-                        logger.debug(f"[GuruAdapter] Closed handle={handle} after failure")
-                    except Exception:
-                        pass
-
-            selenium.driver.switch_to.window(current_window)
-            logger.error("[GuruAdapter] mainvideo not found in any new tab")
-            return None
+            logger.success(f"[GuruAdapter] Final video src = {src}")
+            return src
 
         except Exception as e:
-            logger.error(f"[GuruAdapter] _extract_video_src fatal: {e}", exc_info=True)
+            logger.error(f"[GuruAdapter] _extract_video_src failed: {e}", exc_info=True)
+            return None
+        finally:
             try:
-                if current_window in selenium.driver.window_handles:
-                    selenium.driver.switch_to.window(current_window)
+                selenium.driver.switch_to.default_content()
             except Exception:
                 pass
-            return None
-
-        
+   
     def parse_studios(self, selenium: SeleniumService) -> list[Studio]:
         selenium.get(self.STUDIO_URL, (By.XPATH, "//main[@id='main']//ul/li"))
 
