@@ -1,7 +1,7 @@
 from datetime import datetime
 from beanie import Document, Link
 from pydantic import Field, BaseModel, HttpUrl
-
+from typing import Literal
 
 class Studio(Document):
     name: str
@@ -15,7 +15,7 @@ class Studio(Document):
 
 class Model(Document):
     name: str
-    type: str = Field(default="actress")
+    type: Literal["actress", "actor", "director"] = Field(default="actress")
     profile_url: HttpUrl | None = None
     image_url: HttpUrl | None = None
     site: str = Field(default="unknown")
