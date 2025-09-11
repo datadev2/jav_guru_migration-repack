@@ -45,13 +45,6 @@ class GuruDownloader:
                 buf.seek(0)
                 return buf
 
-    @staticmethod
-    def _name_from_url(url: str) -> str:
-        name = url.split("/")[-1].split("?")[0].strip()
-        name = urllib.parse.unquote(name)
-        name = re.sub(r"[^A-Za-z0-9._-]", "_", name)
-        return name or f"{hashlib.md5(url.encode()).hexdigest()}.mp4"
-
     # --- core ---
     async def download_one(self, video: Video) -> bool:
         page_url = str(video.page_link)
@@ -72,12 +65,12 @@ class GuruDownloader:
             file_size = buf.getbuffer().nbytes
             md5 = hashlib.md5(buf.getbuffer()).hexdigest()
 
-            s3_filename = self._name_from_url(src)
-            s3_key = f"{config.S3_FOLDER}/{s3_filename}"
+            s3_filename = f"{video.jav_code}_{md5}.mp4"
+            s3_key = f"{config.S3_FOLDER}/{s3_filename}".lstrip("/")
             await s3.put_object(buf, s3_key)
 
             video.file_name = s3_filename
-            video.s3_path = f"https://{config.S3_ENDPOINT}/{config.S3_BUCKET}/{config.S3_FOLDER}/{s3_filename}"
+            video.s3_path = f"https://{config.S3_ENDPOINT}/{config.S3_BUCKET}/{s3_key}"
             video.file_size = file_size
             video.file_hash_md5 = md5
             await video.save()
