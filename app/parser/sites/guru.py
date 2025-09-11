@@ -25,10 +25,9 @@ class GuruAdapter:
         selenium.driver.close()
         selenium.driver.switch_to.window(main_window)
 
-    def _extract_video_src(self, selenium: SeleniumService, timeout_sec: int = 300) -> str | None:
+    def _extract_video_src(self, selenium: SeleniumService, timeout_sec: int = 15) -> str | None:
         try:
-            # === Step 1: STREAM ST ===
-            logger.info("[GuruAdapter] Step 1: ищем кнопку STREAM ST")
+            # --- Step 1: STREAM ST ---
             btns = selenium.find_elements("//a[contains(text(),'STREAM ST')]")
             if not btns:
                 logger.error("[GuruAdapter] STREAM ST кнопка не найдена")
@@ -40,72 +39,48 @@ class GuruAdapter:
                 return None
 
             selenium.driver.execute_script("arguments[0].click();", btn)
-            logger.success("[GuruAdapter] STREAM ST button clicked")
+    
+            # --- Step 2: first iframe ---
+            first_iframe = selenium.wait_for_element((By.CSS_SELECTOR, "iframe[src*='jav.guru/searcho/']"), timeout=30)
 
-            # === Step 2: первый iframe ===
-            logger.info("[GuruAdapter] Step 2: ждём первый iframe")
-            first_iframe = selenium.wait_for_element((By.XPATH, "//iframe[@data-localize]"), timeout=30)
             if not first_iframe:
                 logger.error("[GuruAdapter] Первый iframe не найден")
                 return None
+
             selenium.driver.switch_to.frame(first_iframe)
 
-            logger.info("[GuruAdapter] Step 2: кликаем .playbutton")
             play_btn = selenium.wait_for_element((By.XPATH, "//*[contains(@class,'playbutton')]"), timeout=30)
-            if not play_btn:
-                logger.error("[GuruAdapter] .playbutton не найден")
-                selenium.driver.switch_to.default_content()
-                return None
             selenium.driver.execute_script("arguments[0].click();", play_btn)
-            logger.success("[GuruAdapter] .playbutton clicked")
 
-            selenium.driver.switch_to.default_content()
-
-            # === Step 2.5: реклама ===
-            wait_time = 180
-            logger.info(f"[GuruAdapter] Step 2.5: ждём рекламу до {wait_time} сек")
-            for i in range(wait_time):
-                if i % 10 == 0:
-                    logger.info(f"[GuruAdapter] ... прошло {i} сек ожидания рекламы")
-                time.sleep(1)
-            logger.success("[GuruAdapter] Завершили ожидание рекламы, ищем plyr iframe")
-
-            # === Step 3: второй iframe ===
+            # --- Step 3: second iframe ---
             second_iframe = selenium.wait_for_element(
-                (By.XPATH, "//iframe[contains(@src,'searcho/?dr=')]"),
+                (By.XPATH, "//iframe[not(contains(@src, '.jpg'))]"),
                 timeout=60
             )
-            if not second_iframe:
-                logger.error("[GuruAdapter] Второй iframe не найден")
-                return None
             selenium.driver.switch_to.frame(second_iframe)
 
-            # === Step 3: цикл overlay+play + src ===
-            logger.info("[GuruAdapter] Step 3: начинаем долбить overlay+play и читать mainvideo.src")
+            streamtape_url = selenium.driver.execute_script("return document.location.href;")
+            selenium.get(streamtape_url)
+
+            # --- Step 4: overlay+play = src ---
             deadline = time.time() + 180
             src = None
             attempt = 0
-
             while time.time() < deadline:
                 attempt += 1
-                logger.info(f"[GuruAdapter] Попытка #{attempt}: overlay+play + чтение src")
 
-                js_code = """
+                extract_src_js = """
                     document.querySelector(".play-overlay")?.click();
                     setTimeout(() => {
                         document.querySelector("[data-plyr='play']")?.click();
                     }, 500);
                     return document.querySelector('#mainvideo')?.getAttribute('src');
                 """
-                candidate = selenium.driver.execute_script(js_code)
+                candidate = selenium.driver.execute_script(extract_src_js)
 
                 if candidate:
                     src = candidate
-                    logger.success(f"[GuruAdapter] Нашли src на попытке #{attempt}: {src}")
                     break
-
-                logger.info("[GuruAdapter] src нет, ждём 8 сек...")
-                time.sleep(8)
 
             if not src:
                 logger.error("[GuruAdapter] src так и не появился")
@@ -114,7 +89,6 @@ class GuruAdapter:
             if src.startswith("//"):
                 src = "https:" + src
 
-            logger.success(f"[GuruAdapter] Final video src = {src}")
             return src
 
         except Exception as e:
