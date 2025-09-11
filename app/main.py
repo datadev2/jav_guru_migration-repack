@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from fastapi import FastAPI, status, Response, HTTPException
+from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 
 from app.db.database import init_mongo

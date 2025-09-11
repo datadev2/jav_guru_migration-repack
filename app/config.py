@@ -26,7 +26,7 @@ class Config(BaseSettings):
     DRIVER: str
     AD_BLOCK: str
 
-    SITE_NAME: str = Field(default="guru")
+    SITE_NAME: str
 
     @property
     def database_dsn(self) -> MongoDsn:
