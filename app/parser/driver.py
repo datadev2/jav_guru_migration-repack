@@ -1,5 +1,7 @@
 import undetected_chromedriver as uc
 from fake_useragent import FakeUserAgent
+from selenium_stealth import stealth
+
 from app.config import config
 
 
@@ -41,7 +43,18 @@ class SeleniumDriver:
             options=options,
             headless=headless,
         )
-        
+
+        stealth(
+            self.driver,
+            languages=["en-US", "en"],
+            vendor="Google Inc.",
+            platform="Win32",
+            webgl_vendor="Intel Inc.",
+            renderer="Intel Iris OpenGL Engine",
+            fix_hairline=True,
+            run_on_insecure_origins=True,
+        )
+                
     def __enter__(self):
         return self.driver
 
