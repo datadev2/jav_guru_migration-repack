@@ -1,4 +1,5 @@
 import time
+import re
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -24,6 +25,22 @@ class GuruAdapter:
     def _close_video_tab(self, selenium: SeleniumService, main_window: str) -> None:
         selenium.driver.close()
         selenium.driver.switch_to.window(main_window)
+
+    def _get_last_page(self, selenium: SeleniumService) -> int:
+        try:
+            el = selenium.find_first("//a[@class='last']")
+            if el:
+                href = el.get_attribute("href")
+                return int(href.strip("/").split("/")[-1])
+            # fallback
+            el = selenium.find_first("//span[@class='pages']")
+            if el:
+                m = re.search(r"of\s+([\d,]+)", el.text)
+                if m:
+                    return int(m.group(1).replace(",", ""))
+        except Exception as e:
+            logger.error(f"[GuruAdapter] Failed to get last page: {e}")
+        return 1
 
     def _extract_video_src(self, selenium: SeleniumService, timeout_sec: int = 15) -> str | None:
         try:
@@ -185,11 +202,21 @@ class GuruAdapter:
         logger.info(f"[GuruAdapter] Collected {len(models)} actresses")
         return list(models.values())
 
-    def parse_videos(self, selenium: SeleniumService) -> list[ParsedVideo]:
-        videos: list[ParsedVideo] = []
-        page = 1
+    def parse_videos(
+            self, 
+            selenium: SeleniumService,
+            start_page: int | None = None, 
+            end_page: int | None = None
+        ) -> list[ParsedVideo]:
 
-        while True:
+        if start_page is None:
+            start_page = self._get_last_page(selenium)
+        if end_page is None:
+            end_page = 1
+
+
+        videos: list[ParsedVideo] = []
+        for page in range(start_page, end_page - 1, -1):
             url = self.BASE_URL if page == 1 else f"{self.BASE_URL}page/{page}/"
             logger.info(f"[GuruAdapter] Open page {page}: {url}")
             selenium.get(url, (By.XPATH, "//div[contains(@class,'site-content')]"))
@@ -199,12 +226,7 @@ class GuruAdapter:
                 logger.info(f"[GuruAdapter] No cards found, stop at page {page}")
                 break
             
-            #todo DEBUG
-            if page == 5:
-                break
-            #todo DEBUG
-
-            for idx, card in enumerate(cards, start=1):
+            for idx, card in enumerate(reversed(cards), start=1):
                 try:
                     a = card.find_element(By.XPATH, ".//div[contains(@class,'grid1')]//h2/a")
                     page_link = a.get_attribute("href")
@@ -225,8 +247,6 @@ class GuruAdapter:
 
                 except Exception as e:
                     logger.warning(f"[GuruAdapter] Failed to parse card on page {page}, idx {idx}: {e}")
-
-            page += 1
 
         logger.info(f"[GuruAdapter] Collected {len(videos)} video links")
         return videos
