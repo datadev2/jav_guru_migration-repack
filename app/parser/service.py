@@ -121,11 +121,16 @@ class Parser(SeleniumDriver):
             build_fn=lambda m: m,
         )
 
-    async def get_videos(self, max_pages: int | None = None):
+    async def get_videos(
+            self,
+            start_page: int | None = None,
+            end_page: int = 1):
         await init_mongo()
-        raw_videos = self.adapter.parse_videos(self.selenium)
-        if max_pages:
-            raw_videos = raw_videos[:max_pages]
+        raw_videos = self.adapter.parse_videos(
+            self.selenium,
+            start_page=start_page,
+            end_page=end_page,
+        )
 
         logger.info(f"[Parser] Found {len(raw_videos)} raw videos from {self.adapter.site_name}")
 

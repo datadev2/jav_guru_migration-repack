@@ -48,7 +48,6 @@ class GuruDownloader:
     # --- core ---
     async def download_one(self, video: Video) -> bool:
         page_url = str(video.page_link)
-        logger.info(f"DL {video.jav_code} | {page_url}")
 
         try:
             self.selenium.get(page_url, wait_selector=(By.XPATH, "//div[contains(@class,'inside-article')]"))

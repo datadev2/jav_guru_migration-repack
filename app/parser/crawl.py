@@ -32,7 +32,7 @@ AdapterCls = SITE_TO_ADAPTER[site]
 async def run_parse():
     await init_mongo()
     try:
-        with Parser(adapter=adapter, headless=False) as parser:
+        with Parser(adapter=adapter, headless=True) as parser:
             parser.init_adblock()
             # --
             # await parser.get_categories()
@@ -40,8 +40,9 @@ async def run_parse():
             # await parser.get_models()
             # await parser.get_studios()
             # --
-            await parser.get_videos(max_pages=1)
+            await parser.get_videos(start_page=4409, end_page=4409)     # one page
             await parser.get_videos_data(max_videos=1)
+
             logger.info("Pipeline finished successfully.")
     except Exception as e:
         import traceback
@@ -50,7 +51,7 @@ async def run_parse():
 
 async def run_download(limit=1):
     await init_mongo()
-    with SeleniumDriver(headless=False) as driver:
+    with SeleniumDriver(headless=True) as driver:
         selenium = SeleniumService(driver)
         adapter = AdapterCls()
         await download_fresh_videos(selenium, adapter, limit=limit) # limit=1
@@ -58,4 +59,4 @@ async def run_download(limit=1):
         
 if __name__ == "__main__":
     asyncio.run(run_parse())
-    asyncio.run(run_download())
+    asyncio.run(run_download(1))
