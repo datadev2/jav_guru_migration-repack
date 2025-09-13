@@ -1,10 +1,9 @@
 import time
 import re
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from dateutil import parser as dateparser
 
-from app.db.models import Video, Category, Studio, ParsedVideo, Tag, Model
+from app.db.models import Category, Studio, ParsedVideo, Tag, Model
 from app.parser.interactions import SeleniumService
 from app.logger import init_logger
 
@@ -274,7 +273,11 @@ class GuruAdapter:
         # release date
         date_el = selenium.find_first("//li[strong/span[text()='Release Date: ']]")
         if date_el:
-            video.release_date = date_el.text.replace("Release Date:", "").strip()
+            raw = date_el.text.replace("Release Date:", "").strip()
+            try:
+                video.release_date = dateparser.parse(raw)
+            except Exception:
+                video.release_date = None
 
         # categories
         cats = selenium.find_elements("//li[strong[text()='Category:']]/a")
