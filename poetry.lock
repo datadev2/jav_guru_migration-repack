@@ -2806,6 +2806,22 @@ files = [
 ]
 
 [[package]]
+name = "undetected-chromedriver"
+version = "3.5.5"
+description = "('Selenium.webdriver.Chrome replacement with compatiblity for Brave, and other Chromium based browsers.', 'Not triggered by CloudFlare/Imperva/hCaptcha and such.', 'NOTE: results may vary due to many factors. No guarantees are given, except for ongoing efforts in understanding detection algorithms.')"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "undetected-chromedriver-3.5.5.tar.gz", hash = "sha256:9f945e1435005247abe17de316bcfda85b284a4177fd5f25167c78ced33b65ec"},
+]
+
+[package.dependencies]
+requests = "*"
+selenium = ">=4.9.0"
+websockets = "*"
+
+[[package]]
 name = "uritemplate"
 version = "4.1.1"
 description = "Implementation of RFC 6570 URI Templates"
@@ -3355,4 +3371,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "c840b0556705a95820268c1e5a4715a7aff326cf6dd0f6ce5b81c4ea0f8b656c"
+content-hash = "ae0dd6491d93af87c0a59d641ffcd3f6da843b846798c6279167545e914aaa0c"
