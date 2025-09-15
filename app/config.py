@@ -28,6 +28,10 @@ class Config(BaseSettings):
 
     SITE_NAME: str
 
+    G_SPREADSHEET_ID: str
+    G_SPREADSHEET_TAB: str = "Main"
+    G_SPREADSHEET_CREDS: str
+
     @property
     def database_dsn(self) -> MongoDsn:
         dsn = MongoDsn.build(
