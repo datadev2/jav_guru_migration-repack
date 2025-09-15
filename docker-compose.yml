@@ -1,7 +1,11 @@
 services:
-  #<baddiesonly>:
-    image: #<abelodev/video-download:baddiesonly-tv>
-    container_name: #<baddiesonly-tv>
+  celery:
+    build:
+      context: .
+    container_name: jav-guru-downloader
     env_file:
       - .env
-    command: "celery -A app.tasks worker --loglevel=INFO --pool=prefork --concurrency=4"
+    volumes:
+      - /usr/bin/chromedriver:/usr/bin/chromedriver
+      - /usr/bin/adblock.crx:/usr/bin/adblock.crx
+    command: "celery -A app.infra.queue worker --loglevel=INFO --pool=prefork --concurrency=1"
