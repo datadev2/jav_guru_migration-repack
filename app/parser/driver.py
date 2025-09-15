@@ -8,7 +8,7 @@ from app.config import config
 class SeleniumDriver:
     def __init__(
         self,
-        driver_path: str = config.DRIVER or None,
+        driver_path: str | None = config.DRIVER or None,
         adblock_path: str = config.AD_BLOCK,
         headless: bool = True,
     ):
