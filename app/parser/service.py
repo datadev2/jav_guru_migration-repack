@@ -103,14 +103,46 @@ class Parser(SeleniumDriver):
             build_fn=lambda c: c,
         )
 
-    async def get_models(self) -> int:
+    async def get_actresses(self) -> int:
         """
-        Crawl site and insert unique models (actresses) into MongoDB.
+        Crawl site and insert unique actresses into MongoDB.
         """
         await init_mongo()
-        raw_models = self.adapter.parse_models(self.selenium)
+        raw_models = self.adapter.parse_actress(self.selenium)
 
-        logger.info(f"[Parser] Found {len(raw_models)} raw models from {self.adapter.site_name}")
+        logger.info(f"[Parser] Found {len(raw_models)} actresses from {self.adapter.site_name}")
+
+        return await self._insert_unique(
+            Model,
+            raw_models,
+            key_fn=lambda m: m.name,
+            build_fn=lambda m: m,
+        )
+
+    async def get_actors(self) -> int:
+        """
+        Crawl site and insert unique actors into MongoDB.
+        """
+        await init_mongo()
+        raw_models = self.adapter.parse_actors(self.selenium)
+
+        logger.info(f"[Parser] Found {len(raw_models)} actors from {self.adapter.site_name}")
+
+        return await self._insert_unique(
+            Model,
+            raw_models,
+            key_fn=lambda m: m.name,
+            build_fn=lambda m: m,
+        )
+
+    async def get_directors(self) -> int:
+        """
+        Crawl site and insert unique directors into MongoDB.
+        """
+        await init_mongo()
+        raw_models = self.adapter.parse_directors(self.selenium)
+
+        logger.info(f"[Parser] Found {len(raw_models)} directors from {self.adapter.site_name}")
 
         return await self._insert_unique(
             Model,
@@ -190,6 +222,13 @@ class Parser(SeleniumDriver):
                 video.directors = await Model.find(
                     In(Model.name, parsed.directors),
                     Model.type == "director",
+                    Model.site == self.adapter.site_name
+                ).to_list()
+
+            if parsed.actors:
+                video.actors = await Model.find(
+                    In(Model.name, parsed.actors),
+                    Model.type == "actor",
                     Model.site == self.adapter.site_name
                 ).to_list()
 
