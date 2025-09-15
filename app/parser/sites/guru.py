@@ -13,6 +13,7 @@ class GuruAdapter:
     BASE_URL = "https://jav.guru/"
     STUDIO_URL = "https://jav.guru/jav-makers-list/"
     TAG_URL = "https://jav.guru/jav-tags-list/"
+    CATEGORY_URL = "https://jav.guru/?s="
 
     def _open_video_tab(self, selenium: SeleniumService, url: str) -> None:
         selenium.driver.execute_script(f"window.open('{url}', '_blank');")
@@ -150,53 +151,79 @@ class GuruAdapter:
         return list(tags.values())
     
     def parse_categories(self, selenium: SeleniumService) -> list[Category]:
-        return [
-            Category(
-                name=tag.name, 
-                source_url=tag.source_url, 
-                site=self.site_name)
-                for tag in self.parse_tags(selenium)]
+        selenium.get(self.CATEGORY_URL, (By.XPATH, "//div[@class='dropdown-menu']/div"))
 
-    def parse_models(self, selenium: SeleniumService) -> list[Model]:
-        models: dict[str, Model] = {}
+        els = selenium.find_elements("//div[@class='dropdown-menu']/div")
+        logger.debug(els)
+        categories: list[Category] = []
+
+        for el in els:
+            try:
+                name = el.get_attribute("textContent").strip()
+
+                data_value = el.get_attribute("data-value")
+                if not name or data_value == "all":
+                    continue
+                source_url = f"{self.BASE_URL}?s=&category_name={data_value}"
+                categories.append(Category(name=name, source_url=source_url, site=self.site_name))
+                logger.info(f"[GuruAdapter] Found category: {name} ({source_url})")
+            except Exception as e:
+                logger.warning(f"[GuruAdapter] Failed to parse category element: {e}")
+
+        return categories
+
+    def parse_people(self, selenium: SeleniumService, base_path: str, type_: str) -> list[Model]:
+        people: dict[str, Model] = {}
         page = 1
 
         while True:
-            url = f"{self.BASE_URL}jav-actress-list/page/{page}/"
-            logger.info(f"[GuruAdapter] Open actress page {page}: {url}")
+            url = f"{self.BASE_URL}{base_path}/page/{page}/"
+            logger.info(f"[GuruAdapter] Open {type_} page {page}: {url}")
             selenium.get(url, (By.XPATH, "//div[@class='actress-box']"))
 
             cards = selenium.find_elements("//div[@class='actress-box']/a")
             if not cards:
-                logger.info(f"[GuruAdapter] No actress cards found, stop at page {page}")
+                logger.info(f"[GuruAdapter] No {type_} cards found, stop at page {page}")
                 break
-            
+
             for card in cards:
                 try:
                     profile_url = card.get_attribute("href")
-
                     name_el = card.find_element(By.XPATH, ".//span[@class='actrees-name']")
                     name = name_el.text.strip() if name_el else None
+                    image_url = None
+                    try:
+                        img_el = card.find_element(By.XPATH, ".//img")
+                        if img_el:
+                            image_url = img_el.get_attribute("src")
+                    except Exception:
+                        pass
 
-                    img_el = card.find_element(By.XPATH, ".//img")
-                    image_url = img_el.get_attribute("src") if img_el else None
-
-                    if name and name not in models:
-                        models[name] = Model(
+                    if name and name not in people:
+                        people[name] = Model(
                             name=name,
-                            type="actress",
+                            type=type_,
                             profile_url=profile_url,
                             image_url=image_url,
                             site=self.site_name,
                         )
-                        logger.info(f"[GuruAdapter] Found actress: {name}")
+                        logger.info(f"[GuruAdapter] Found {type_}: {name}")
                 except Exception as e:
-                    logger.warning(f"[GuruAdapter] Failed to parse actress element: {e}")
+                    logger.warning(f"[GuruAdapter] Failed to parse {type_} element: {e}")
 
             page += 1
 
-        logger.info(f"[GuruAdapter] Collected {len(models)} actresses")
-        return list(models.values())
+        logger.info(f"[GuruAdapter] Collected {len(people)} {type_}s")
+        return list(people.values())
+
+    def parse_actress(self, selenium: SeleniumService) -> list[Model]:
+        return self.parse_people(selenium, "jav-actress-list", "actress")
+
+    def parse_actors(self, selenium: SeleniumService) -> list[Model]:
+        return self.parse_people(selenium, "jav-actors", "actor")
+
+    def parse_directors(self, selenium: SeleniumService) -> list[Model]:
+        return self.parse_people(selenium, "jav-directors-list", "director")
 
     def parse_videos(
             self, 
@@ -279,10 +306,14 @@ class GuruAdapter:
         # categories
         cats = selenium.find_elements("//li[strong[text()='Category:']]/a")
         video.categories = [c.text.strip() for c in cats if c.text.strip()]
+        logger.info(f"[GuruAdapter] {video.jav_code} categories parsed: {video.categories}")
+
 
         # directors
         dirs = selenium.find_elements("//li[strong[text()='Director:']]/a")
         video.directors = [d.text.strip() for d in dirs if d.text.strip()]
+        logger.info(f"[GuruAdapter] {video.jav_code} directors parsed: {video.directors}")
+
 
         # studio
         studio_el = selenium.find_first("//li[strong[text()='Studio:']]/a")
@@ -292,6 +323,11 @@ class GuruAdapter:
         # tags
         tags = selenium.find_elements("//li[contains(@class,'w1')]/a[@rel='tag']")
         video.tags = [t.text.strip() for t in tags if t.text.strip()]
+
+        # actors
+        acts_male = selenium.find_elements("//li[strong[text()='Actor:']]/a")
+        video.actors = [a.text.strip() for a in acts_male if a.text.strip()]
+        logger.info(f"[GuruAdapter] {video.jav_code} actors parsed: {video.actors}")
 
         # actresses
         acts = selenium.find_elements("//li[strong[text()='Actress:']]/a")
