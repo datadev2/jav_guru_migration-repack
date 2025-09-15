@@ -40,13 +40,13 @@ app = FastAPI(
 
 @app.post("/export-kvs")
 async def export_kvs_feed(limit: int = 15):
+    # This is a temporary function, just for a test, not fully implemented.
     videos = await Video.find(
         Video.s3_path != None, fetch_links=True,
     ).limit(limit).to_list()
 
     csv_data = csv_dump(videos)
     video_ids = [str(v.id) for v in videos]
-
     return Response(
         content=csv_data,
         media_type="text/plain",
