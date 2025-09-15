@@ -1,26 +1,26 @@
-from loguru import logger as _logger
-from loguru._logger import Logger
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
+from loguru import logger
 
 
-def init_logger() -> Logger:
+def init_logger():
     log_path = Path(__file__).parent.parent / "logs"
     log_path.mkdir(exist_ok=True)
 
     date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     log_file = log_path / f"log_{date_str}.log"
 
-    _logger.remove()
+    logger.remove()
 
-    _logger.add(
+    logger.add(
         sys.stdout, 
         level="INFO", 
         format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level}</level> | {message}"
     )
 
-    _logger.add(
+    logger.add(
         log_file,
         rotation="10 MB",
         retention="7 days",
@@ -31,5 +31,3 @@ def init_logger() -> Logger:
         backtrace=True,
         diagnose=True
     )
-
-    return _logger

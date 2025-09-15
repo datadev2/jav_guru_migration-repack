@@ -5,10 +5,7 @@ from dateutil import parser as dateparser
 
 from app.db.models import Category, Studio, ParsedVideo, Tag, Model
 from app.parser.interactions import SeleniumService
-from app.logger import init_logger
-
-
-logger = init_logger()
+from loguru import logger
 
 
 class GuruAdapter:
@@ -104,7 +101,7 @@ class GuruAdapter:
 
             if src.startswith("//"):
                 src = "https:" + src
-
+                logger.info(f"Source link extracted: {src}")
             return src
 
         except Exception as e:

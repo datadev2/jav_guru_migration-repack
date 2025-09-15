@@ -1,14 +1,14 @@
 import csv
 from typing import Dict, List, Type, Iterable
 import aiohttp
-import re
-import urllib.parse
 import hashlib
 from selenium.webdriver.common.by import By
 
 from pydantic import BaseModel
 from pymongo.errors import DuplicateKeyError
 from io import BytesIO, StringIO
+
+from loguru import logger
 
 from app.config import config
 from app.db.models import Video
@@ -17,11 +17,6 @@ from app.parser.interactions import SeleniumService
 from app.parser.sites.guru import GuruAdapter
 from app.download.exceptions import DownloadFailedException
 from app.infra.s3 import s3
-from app.logger import init_logger
-
-
-logger = init_logger()
-
 
 
 class GuruDownloader:

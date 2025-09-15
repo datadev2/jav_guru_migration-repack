@@ -1,9 +1,7 @@
 from app.db.models import Category
-from app.logger import init_logger
+from loguru import logger
 from selenium.webdriver.common.by import By
 from app.parser.interactions import SeleniumService
-
-logger = init_logger()
 
 
 class JavtifulAdapter:

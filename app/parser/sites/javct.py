@@ -2,11 +2,8 @@ from selenium.webdriver.common.by import By
 
 from app.db.models import Category, Tag
 from app.parser.interactions import SeleniumService
-from app.logger import init_logger
+from loguru import logger
 
-
-
-logger = init_logger()
 
 class JavctAdapter:
     site_name = "javct"

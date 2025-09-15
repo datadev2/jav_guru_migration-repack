@@ -7,10 +7,8 @@ from app.db.models import Category, Video, Studio, Tag, Model
 from app.parser.driver import SeleniumDriver
 from app.parser.interactions import SeleniumService
 from app.parser.base import ParserAdapter
-from app.logger import init_logger
+from loguru import logger
 
-
-logger = init_logger()
 
 class Parser(SeleniumDriver):
     def __init__(self, adapter: ParserAdapter, headless: bool = True):

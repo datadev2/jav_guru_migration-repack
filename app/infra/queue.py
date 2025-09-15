@@ -1,7 +1,10 @@
 from celery import Celery
 
 from app.config import config
+from app.logger import init_logger
 
+# Call the custom logger here, at the app's entrypoint, and only once.
+init_logger()
 
 queue = Celery(broker=config.REDIS_DSN.unicode_string(), include=["app.infra.worker"])
 

@@ -5,10 +5,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.common.exceptions import TimeoutException
-from app.logger import init_logger
+from loguru import logger
 
-
-logger = init_logger()
 
 class SeleniumService:
     def __init__(self, driver: WebDriver, timeout: int = 10):
