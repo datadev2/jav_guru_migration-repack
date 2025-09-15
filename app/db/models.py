@@ -1,6 +1,6 @@
 from datetime import datetime
 from beanie import Document, Link
-from pydantic import Field, BaseModel, HttpUrl
+from pydantic import Field, BaseModel, HttpUrl, model_validator
 from typing import Literal
 
 class Studio(Document):
@@ -99,5 +99,26 @@ class ParsedVideo(BaseModel):
     actresses: list[str] = []
     studio: str | None = None
     uncensored: bool = False
+
+
+class VideoCSV(BaseModel):
+    jav_code: str
+    title: str
+    release_date: datetime
+    file_hash: str
+    models: list
+    categories: list
+    tags: list
+    s3_path: str
+    studio: str
+
+    @model_validator(mode="after")
+    def validator(self):
+        self.release_date = self.release_date.strftime("%d-%m-%Y")  # type: ignore
+        self.models = ", ".join(self.models)
+        self.categories = ", ".join(self.categories)
+        self.tags = ", ".join(self.tags)
+        return self
+
 
 Collections = [Video, Model, Studio, Category, Tag]
