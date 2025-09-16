@@ -3,15 +3,16 @@ from typing import Dict, List, Type, Iterable
 import aiohttp
 import hashlib
 from selenium.webdriver.common.by import By
-
 from pydantic import BaseModel
 from pymongo.errors import DuplicateKeyError
 from io import BytesIO, StringIO
+from pymediainfo import MediaInfo
+import tempfile
 
 from loguru import logger
 
 from app.config import config
-from app.db.models import Video
+from app.db.models import Video, VideoSource
 from app.db.exports import VideoCSV
 from app.parser.interactions import SeleniumService
 from app.parser.sites.guru import GuruAdapter
@@ -40,8 +41,47 @@ class GuruDownloader:
                 buf.seek(0)
                 return buf
 
+    def _detect_resolution(self, buf: BytesIO, s3_filename: str) -> str:
+        height = None
+        try:
+            buf.seek(0)
+            media_info = MediaInfo.parse(buf)
+            for track in media_info.tracks:
+                if track.track_type == "Video" and track.height:
+                    height = track.height
+                    break
+            else:
+                logger.warning(f"resolution not detected {s3_filename}")
+                return "unknown"
+                
+        except Exception:
+            with tempfile.NamedTemporaryFile(delete=True) as tmp_file:
+                buf.seek(0)
+                tmp_file.write(buf.read())
+                tmp_file.flush()
+                
+                media_info = MediaInfo.parse(tmp_file.name)
+                for track in media_info.tracks:
+                    if track.track_type == "Video" and track.height:
+                        height = track.height
+                        break
+                else:
+                    logger.warning(f"resolution not detected {s3_filename}")
+                    return "unknown"
+        
+        if height <= 480: 
+            return "480p"
+        if height <= 720: 
+            return "720p" 
+        if height <= 1080: 
+            return "1080p"
+        if height <= 1440: 
+            return "2k"
+        return "4k"
+    
     # --- core ---
     async def download_one(self, video: Video) -> bool:
+        video = await Video.get(video.id)
         page_url = str(video.page_link)
 
         try:
@@ -61,15 +101,24 @@ class GuruDownloader:
 
             s3_filename = f"{video.jav_code}_{md5}.mp4"
             s3_key = f"{config.S3_FOLDER}/{s3_filename}".lstrip("/")
+            buf.seek(0)
             await s3.put_object(buf, s3_key)
 
-            video.file_name = s3_filename
-            video.s3_path = f"https://{config.S3_ENDPOINT}/{config.S3_BUCKET}/{s3_key}"
-            video.file_size = file_size
-            video.file_hash_md5 = md5
-            await video.save()
+            s3_path = f"https://{config.S3_ENDPOINT}/{config.S3_BUCKET}/{s3_key}"
+            origin = config.SITE_NAME
+            resolution = self._detect_resolution(buf, s3_filename)
 
-            logger.success(f"OK {s3_filename} | {file_size} bytes")
+            source = VideoSource(
+                origin=origin,
+                resolution=resolution,
+                s3_path=s3_path,
+                file_name=s3_filename,
+                file_size=file_size,
+                hash_md5=md5,
+            )
+            video.sources.append(source)
+            await video.save()
+            logger.success(f"OK {s3_filename} | {file_size} bytes | {resolution}")
             return True
 
         except (DownloadFailedException, DuplicateKeyError) as e:
@@ -88,7 +137,7 @@ class GuruDownloader:
         if ids:
             videos = [video async for video in Video.find({"_id": {"$in": list(ids)}})]
         else:
-            query = Video.find(Video.file_size == None) if only_missing else Video.find({})
+            query = Video.find({"sources": {"$size": 0}}) if only_missing else Video.find({})
             if limit:
                 query = query.limit(limit)
             else:
