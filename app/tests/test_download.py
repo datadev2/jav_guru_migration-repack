@@ -45,8 +45,8 @@ async def test_downloader_fetch_mocked():
         mock_client_session.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_client_session.return_value.__aexit__ = AsyncMock(return_value=None)
         
-        downloader = Downloader(disable_progress=True)
-        result: DownloadedFile = await downloader.fetch(url=fake_url)
+        downloader = Downloader()
+        result: DownloadedFile = await downloader.download_file(url=fake_url)
 
         assert result.filename == "video.mp4"
         assert result.md5 == "eb733a00c0c9d336e65691a37ab54293"
