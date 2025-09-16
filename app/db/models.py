@@ -3,6 +3,7 @@ from beanie import Document, Link
 from pydantic import Field, BaseModel, HttpUrl, model_validator
 from typing import Literal
 
+
 class Studio(Document):
     name: str
     source_url: HttpUrl | None = None
@@ -45,25 +46,20 @@ class Tag(Document):
         name = "tags"
 
 
+class VideoSource(BaseModel):
+    origin: str
+    resolution: str
+    s3_path: str
+    file_name: str
+    file_size: int
+    hash_md5: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 class Video(Document):
     title: str
     jav_code: str
     page_link: HttpUrl
     site: str = Field(default="unknown")
-
-    site_download_link_st: HttpUrl | None = None
-    site_download_link_720p: HttpUrl | None = None
-    site_download_link_1080p: HttpUrl | None = None
-    site_download_link_2k: HttpUrl | None = None
-    site_download_link_4k: HttpUrl | None = None
-    
-    s3_path: str | None = None
-    format: str | None = None
-    file_size: int | None = None
-    file_hash_md5: str | None = None
-    file_name: str | None = None
-    width: int | None = None
-    height: int | None = None
 
     thumbnail_url: HttpUrl | None = None
 
@@ -78,6 +74,8 @@ class Video(Document):
     release_date: datetime | None = None
     uncensored: bool = Field(default=False)
     runtime_minutes: int | None = None
+
+    sources: list[VideoSource] = Field(default_factory=list)
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
