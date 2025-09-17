@@ -41,7 +41,40 @@ class GuruDownloader:
                 buf.seek(0)
                 return buf
 
+    def _detect_runtime(self, buf: BytesIO, s3_filename: str) -> int | None:
+        """
+        Parse video buffer with pymediainfo and return runtime in minutes.
+
+        Runtime is extracted from track.duration (milliseconds → minutes).
+        If not detected or parsing fails, returns None.
+        """
+        try:
+            buf.seek(0)
+            media_info = MediaInfo.parse(buf)
+            for track in media_info.tracks:
+                if track.track_type == "Video" and track.duration:
+                    return int(track.duration / 60000)
+        except Exception:
+            with tempfile.NamedTemporaryFile(delete=True) as tmp_file:
+                buf.seek(0)
+                tmp_file.write(buf.read())
+                tmp_file.flush()
+                media_info = MediaInfo.parse(tmp_file.name)
+                for track in media_info.tracks:
+                    if track.track_type == "Video" and track.duration:
+                        return int(track.duration / 60000)
+
+        logger.warning(f"runtime not detected {s3_filename}")
+        return None
+
     def _detect_resolution(self, buf: BytesIO, s3_filename: str) -> str:
+        """
+        Parse video buffer with pymediainfo and return resolution label.
+
+        Resolution is derived from track.height and normalized to:
+        "480p", "720p", "1080p", "2k", or "4k".
+        If not detected, returns "unknown".
+        """
         height = None
         try:
             buf.seek(0)
@@ -107,6 +140,9 @@ class GuruDownloader:
             s3_path = f"https://{config.S3_ENDPOINT}/{config.S3_BUCKET}/{s3_key}"
             origin = config.SITE_NAME
             resolution = self._detect_resolution(buf, s3_filename)
+            runtime_minutes = self._detect_runtime(buf, s3_filename)
+
+            video.runtime_minutes = runtime_minutes
 
             source = VideoSource(
                 origin=origin,
