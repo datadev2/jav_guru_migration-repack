@@ -256,8 +256,6 @@ class GuruAdapter:
                     title = a.get_attribute("title") or a.text
 
                     jav_code = ""
-                    if title and "[" in title and "]" in title:
-                        jav_code = title.split("[")[1].split("]")[0]
 
                     video = ParsedVideo(
                         title=title.strip() if title else "N/A",
