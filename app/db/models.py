@@ -20,10 +20,16 @@ class Model(Document):
     profile_url: HttpUrl | None = None
     image_url: HttpUrl | None = None
     site: str = Field(default="unknown")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    birth_date: datetime | None = None
+    height_cm: int | None = None
+    bust: int | None = None
+    waist: int | None = None
+    hips: int | None = None
+    cup_size: str | None = None
+    debut_date: datetime | None = None
+    agency: str | None = None
 
-    class Settings:
-        name = "models"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class Category(Document):
