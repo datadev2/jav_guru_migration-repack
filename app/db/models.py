@@ -31,6 +31,8 @@ class Model(Document):
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+    class Settings:
+        name = "models"
 
 class Category(Document):
     name: str
@@ -78,7 +80,7 @@ class Video(Document):
 
     studio: Link[Studio] | None = None
     release_date: datetime | None = None
-    uncensored: bool = Field(default=False)
+    uncensored: bool | None = None
     runtime_minutes: int | None = None
 
     sources: list[VideoSource] = Field(default_factory=list)

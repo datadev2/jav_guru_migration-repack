@@ -15,14 +15,30 @@ class GuruAdapter:
     TAG_URL = "https://jav.guru/jav-tags-list/"
     CATEGORY_URL = "https://jav.guru/?s="
 
-    def _open_video_tab(self, selenium: SeleniumService, url: str) -> None:
+    @staticmethod
+    def _open_video_tab(selenium: SeleniumService, url: str) -> None:
         selenium.driver.execute_script(f"window.open('{url}', '_blank');")
         selenium.driver.switch_to.window(selenium.driver.window_handles[-1])
-
-    def _close_video_tab(self, selenium: SeleniumService, main_window: str) -> None:
+        
+    @staticmethod
+    def _close_video_tab(selenium: SeleniumService, main_window: str) -> None:
         selenium.driver.close()
         selenium.driver.switch_to.window(main_window)
 
+    @staticmethod
+    def _detect_uncensored(selenium: SeleniumService) -> bool:
+        """
+        Detect if video is uncensored from Category section.
+        If no 'jav-uncensored' link found, defaults to censored (False).
+        """
+        cats = selenium.find_elements("//li[strong[text()='Category:']]//a")
+        for a in cats:
+            href = a.get_attribute("href") or ""
+            text = a.text.strip().lower()
+            if "uncensored" in href or "uncensored" in text:
+                return True
+        return False
+    
     def _get_last_page(self, selenium: SeleniumService) -> int:
         try:
             el = selenium.find_first("//a[@class='last']")
@@ -330,8 +346,10 @@ class GuruAdapter:
         # actresses
         acts = selenium.find_elements("//li[strong[text()='Actress:']]/a")
         video.actresses = [a.text.strip() for a in acts if a.text.strip()]
+        logger.info(f"[GuruAdapter] {video.jav_code} actresses parsed: {video.actresses}")
 
-        # uncensored
-        video.uncensored = any(c.lower() == "uncensored" for c in video.categories)
+        # uncensored / censored
+        video.uncensored = self._detect_uncensored(selenium)
+        logger.info(f"[GuruAdapter] {video.jav_code} uncensored/censored parsed: {video.uncensored}")
 
         return video
