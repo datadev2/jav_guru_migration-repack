@@ -41,7 +41,8 @@ class GuruDownloader:
                 buf.seek(0)
                 return buf
 
-    def _detect_runtime(self, buf: BytesIO, s3_filename: str) -> int | None:
+    @staticmethod
+    def _detect_runtime(buf: BytesIO, s3_filename: str) -> int | None:
         """
         Parse video buffer with pymediainfo and return runtime in minutes.
 
@@ -67,7 +68,8 @@ class GuruDownloader:
         logger.warning(f"runtime not detected {s3_filename}")
         return None
 
-    def _detect_resolution(self, buf: BytesIO, s3_filename: str) -> str:
+    @staticmethod
+    def _detect_resolution(buf: BytesIO, s3_filename: str) -> str:
         """
         Parse video buffer with pymediainfo and return resolution label.
 
