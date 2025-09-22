@@ -28,10 +28,10 @@ if site not in SITE_TO_ADAPTER:
 adapter = SITE_TO_ADAPTER[site]()
 AdapterCls = SITE_TO_ADAPTER[site]
 
-async def run_parse():
+async def run_parse(start_page: int, end_page: int, headless: bool = False):
     await init_mongo()
     try:
-        with Parser(adapter=adapter, headless=True) as parser:
+        with Parser(adapter=adapter, headless=headless) as parser:
             parser.init_adblock()
             # --
             # await parser.get_categories()
@@ -39,8 +39,8 @@ async def run_parse():
             # await parser.get_models()
             # await parser.get_studios()
             # --
-            await parser.get_videos(start_page=4409, end_page=4409)     # one page
-            await parser.get_videos_data(max_videos=1)
+            await parser.get_videos(start_page=start_page, end_page=end_page)
+            await parser.get_videos_data()
 
             logger.info("Pipeline finished successfully.")
     except Exception as e:
@@ -57,5 +57,5 @@ async def run_download(limit: int, headless: bool):
 
 
 if __name__ == "__main__":
-    asyncio.run(run_parse())
-    asyncio.run(run_download(1, True))
+    asyncio.run(run_parse(start_page=4451, end_page=4441, headless=True))
+    # asyncio.run(run_download(limit=1, headless=True))
