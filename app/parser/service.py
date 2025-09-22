@@ -1,13 +1,15 @@
 from typing import Callable
+
 from beanie import Document
 from beanie.operators import In
+from loguru import logger
 
-from app.db.database import init_mongo
 from app.db.models import Category, Video, Studio, Tag, Model
 from app.parser.driver import SeleniumDriver
 from app.parser.interactions import SeleniumService
 from app.parser.base import ParserAdapter
-from loguru import logger
+from app.parser.sites.javct import JavctAdapter
+from app.parser.sites.javtiful import JavtifulAdapter
 
 
 class Parser(SeleniumDriver):
@@ -15,6 +17,8 @@ class Parser(SeleniumDriver):
         super().__init__(headless=headless)
         self.selenium = SeleniumService(self.driver)
         self.adapter = adapter
+        self._javct_adapter = JavctAdapter()  # TODO: temporary decision; change later.
+        self._javtiful_adapter = JavtifulAdapter()  # TODO: temporary decision; change later.
 
     def __enter__(self):
         return self
@@ -58,7 +62,6 @@ class Parser(SeleniumDriver):
         """
         Crawl site and insert unique studios into MongoDB.
         """
-        await init_mongo()
         raw_studios = self.adapter.parse_studios(self.selenium)
 
         logger.info(f"[Parser] Found {len(raw_studios)} raw studios from {self.adapter.site_name}")
@@ -74,7 +77,6 @@ class Parser(SeleniumDriver):
         """
         Crawl site and insert unique tags into MongoDB.
         """
-        await init_mongo()
         raw_tags = self.adapter.parse_tags(self.selenium)
 
         logger.info(f"[Parser] Found {len(raw_tags)} raw tags from {self.adapter.site_name}")
@@ -91,7 +93,6 @@ class Parser(SeleniumDriver):
         Crawl site and insert unique categories into MongoDB.
         For Guru: categories == tags (same source).
         """
-        await init_mongo()
         raw_categories = self.adapter.parse_categories(self.selenium)
 
         logger.info(f"[Parser] Found {len(raw_categories)} raw categories from {self.adapter.site_name}")
@@ -107,7 +108,6 @@ class Parser(SeleniumDriver):
         """
         Crawl site and insert unique actresses into MongoDB.
         """
-        await init_mongo()
         raw_models = self.adapter.parse_actress(self.selenium)
 
         logger.info(f"[Parser] Found {len(raw_models)} actresses from {self.adapter.site_name}")
@@ -123,7 +123,6 @@ class Parser(SeleniumDriver):
         """
         Crawl site and insert unique actors into MongoDB.
         """
-        await init_mongo()
         raw_models = self.adapter.parse_actors(self.selenium)
 
         logger.info(f"[Parser] Found {len(raw_models)} actors from {self.adapter.site_name}")
@@ -139,7 +138,6 @@ class Parser(SeleniumDriver):
         """
         Crawl site and insert unique directors into MongoDB.
         """
-        await init_mongo()
         raw_models = self.adapter.parse_directors(self.selenium)
 
         logger.info(f"[Parser] Found {len(raw_models)} directors from {self.adapter.site_name}")
@@ -152,10 +150,10 @@ class Parser(SeleniumDriver):
         )
 
     async def get_videos(
-            self,
-            start_page: int | None = None,
-            end_page: int = 1):
-        await init_mongo()
+        self,
+        start_page: int | None = None,
+        end_page: int = 1
+    ):
         raw_videos = self.adapter.parse_videos(
             self.selenium,
             start_page=start_page,
@@ -183,8 +181,6 @@ class Parser(SeleniumDriver):
         Args:
             max_videos: maximum number of videos to enrich (None = process all).
         """
-        await init_mongo()
-
         query = Video.find(
             Video.site == self.adapter.site_name,
             Video.studio == None
@@ -194,6 +190,9 @@ class Parser(SeleniumDriver):
             videos = videos[:max_videos]
 
         logger.info(f"[Parser] Enriching {len(videos)} videos with details")
+
+        all_categories = await Category.find_all().to_list()
+        all_tags = await Tag.find_all().to_list()
 
         for video in videos:
             parsed = self.adapter.parse_video(self.selenium, video)
@@ -246,6 +245,10 @@ class Parser(SeleniumDriver):
                 )
                 if studio:
                     video.studio = studio
-
+            
             await video.save()
+            
+            await self._javct_adapter.enrich_video_with_javct_data(video, all_categories, self.selenium)
+            await self._javtiful_adapter.enrich_video_with_javtiful_data(video, all_categories, all_tags, self.selenium)
+            
             logger.info(f"[Parser] Updated {video.jav_code} | {video.title[:50]}...")
