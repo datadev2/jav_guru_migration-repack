@@ -82,6 +82,7 @@ class Video(Document):
     release_date: datetime | None = None
     uncensored: bool | None = None
     runtime_minutes: int | None = None
+    type_javtiful: str | None = None
 
     sources: list[VideoSource] = Field(default_factory=list)
 
