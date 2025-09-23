@@ -8,8 +8,6 @@ from app.db.models import Category, Video, Studio, Tag, Model
 from app.parser.driver import SeleniumDriver
 from app.parser.interactions import SeleniumService
 from app.parser.base import ParserAdapter
-from app.parser.sites.javct import JavctAdapter
-from app.parser.sites.javtiful import JavtifulAdapter
 
 
 class Parser(SeleniumDriver):
@@ -17,8 +15,6 @@ class Parser(SeleniumDriver):
         super().__init__(headless=headless)
         self.selenium = SeleniumService(self.driver)
         self.adapter = adapter
-        self._javct_adapter = JavctAdapter()  # TODO: temporary decision; change later.
-        self._javtiful_adapter = JavtifulAdapter()  # TODO: temporary decision; change later.
 
     def __enter__(self):
         return self
@@ -191,9 +187,6 @@ class Parser(SeleniumDriver):
 
         logger.info(f"[Parser] Enriching {len(videos)} videos with details")
 
-        all_categories = await Category.find_all().to_list()
-        all_tags = await Tag.find_all().to_list()
-
         for video in videos:
             parsed = self.adapter.parse_video(self.selenium, video)
             if not parsed:
@@ -247,8 +240,22 @@ class Parser(SeleniumDriver):
                     video.studio = studio
             
             await video.save()
-            
-            await self._javct_adapter.enrich_video_with_javct_data(video, all_categories, self.selenium)
-            await self._javtiful_adapter.enrich_video_with_javtiful_data(video, all_categories, all_tags, self.selenium)
-            
             logger.info(f"[Parser] Updated {video.jav_code} | {video.title[:50]}...")
+
+    async def enrich_videos(self) -> None:
+        all_categories = await Category.find_all().to_list()
+        all_tags = await Tag.find_all().to_list()
+        all_videos = await Video.find_all().to_list()
+        site_name = self.adapter.site_name
+        if site_name == "javct":
+            videos_to_enrich = [video for video in all_videos if not video.javct_enriched]
+        elif site_name == "javtiful":
+            videos_to_enrich = [video for video in all_videos if not video.javtiful_enriched]
+        logger.info(f"Videos to enrich: {len(videos_to_enrich)}")
+        for video in videos_to_enrich:
+            logger.info(f"Enriching video document {video.jav_code} with data from {site_name}...")
+            video_enriched = self.adapter.enrich_video(self.selenium, video, all_categories, all_tags)
+            await video_enriched.save()
+            logger.success(
+                f"Video {video.jav_code} has been processed using {site_name} adapter and saved"
+            )
