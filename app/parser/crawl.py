@@ -28,7 +28,7 @@ if site not in SITE_TO_ADAPTER:
 adapter = SITE_TO_ADAPTER[site]()
 AdapterCls = SITE_TO_ADAPTER[site]
 
-async def run_parse(start_page: int, end_page: int, headless: bool = False):
+async def run_init_parse(start_page: int, end_page: int, headless: bool = False):
     await init_mongo()
     try:
         with Parser(adapter=adapter, headless=headless) as parser:
@@ -48,6 +48,20 @@ async def run_parse(start_page: int, end_page: int, headless: bool = False):
         traceback.print_exc()
         logger.error("Pipeline failed: {}", e, exc_info=True)
 
+
+async def run_enrichment_parse(headless: bool = False):
+    await init_mongo()
+    try:
+        with Parser(adapter=adapter, headless=headless) as parser:
+            parser.init_adblock()
+            await parser.enrich_videos()
+            logger.info("Pipeline finished successfully.")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        logger.error("Pipeline failed: {}", e, exc_info=True)
+
+
 async def run_download(limit: int, headless: bool):
     await init_mongo()
     with SeleniumDriver(headless=headless) as driver:
@@ -57,5 +71,6 @@ async def run_download(limit: int, headless: bool):
 
 
 if __name__ == "__main__":
-    asyncio.run(run_parse(start_page=4451, end_page=4441, headless=True))
+    # asyncio.run(run_init_parse(start_page=4455, end_page=4450, headless=True))
+    asyncio.run(run_enrichment_parse(headless=True))
     # asyncio.run(run_download(limit=1, headless=True))
