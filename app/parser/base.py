@@ -1,5 +1,5 @@
 from typing import Protocol
-from app.db.models import Video
+from app.db.models import Category, Tag, Video
 from app.parser.interactions import SeleniumService
 
 
@@ -10,4 +10,9 @@ class ParserAdapter(Protocol):
         ...
 
     def parse_video(self, selenium: SeleniumService, video: Video) -> Video | None:
+        ...
+    
+    def enrich_video(
+        self, selenium: SeleniumService, video: Video, categories: list[Category], tags: list[Tag]
+    ) -> Video | None:
         ...
