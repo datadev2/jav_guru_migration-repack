@@ -30,21 +30,21 @@ class JavtifulAdapter:
 
         return list(categories.values())
     
-    async def enrich_video_with_javtiful_data(
+    def enrich_video(
         self,
+        selenium: SeleniumService,
         video: Video,
         all_categories: list[Category],
         all_tags: list[Tag],
-        selenium: SeleniumService,
-    ) -> None:
-        logger.info(f"Enriching video document {video.jav_code} with JAVTIFUL data...")
+    ) -> Video:
+        video.javtiful_enriched = True  # Make this flag True anyway.
         # Look up for a video using the jav code provided.
         search_url = f"{self.BASE_URL}/search/videos?search_query={video.jav_code.lower()}"
         selenium.get(search_url)
         found_video_card = selenium.find_first("/html/body/main/div[3]/div[2]/section/div[2]")
         if not found_video_card:
-            logger.error(f"Search on Javtiful failed: video {video.jav_code} not found")
-            return
+            logger.info(f"[!] Search on Javtiful failed: video {video.jav_code} not found")
+            return video
         # Look up for video attributes on the video page found.
         try:
             movie_page_tag = found_video_card.find_element(By.TAG_NAME, "a")
@@ -63,45 +63,22 @@ class JavtifulAdapter:
             )
             video_type_found = video_type_el.find_element(By.TAG_NAME, "a").text
         except NoSuchElementException:
-            logger.error(f"Search for elements on the video page {search_url} failed")
-            return
+            logger.info(f"[!] Search on Javtiful failed: video {video.jav_code} not found")
+            return video
         # Enrich with javtiful categories.
         for cat in categories_found:
             try:
                 category_from_db = next((c for c in all_categories if c.name == cat))
                 video.categories.append(category_from_db)  # type: ignore
             except StopIteration:
-                new_cat = Category(name=cat, site=self.site_name)
-                inserted = await Category.insert_one(new_cat)
-                video.categories.append(inserted)  # type: ignore
+                logger.info(f"[!] Category {cat} not found in DB!")
         # Enrich with javtiful tags.
         for tag in tags_found:
             try:
                 tag_from_db = next((t for t in all_tags if t.name == tag))
                 video.tags.append(tag_from_db)  # type: ignore
             except StopIteration:
-                new_tag = Tag(name=tag, site=self.site_name)
-                inserted = await Tag.insert_one(new_tag)
-                video.tags.append(inserted)  # type: ignore
+                logger.info(f"[!] Tag {tag} not found in DB!")
         # Enrich with javtiful type and save video.
         video.type_javtiful = video_type_found
-        await video.save()  # type: ignore
-        logger.success(f"Video {video.jav_code} has been successfully enriched with the data from Javtiful")
-
-
-if __name__ == "__main__":
-    import asyncio
-    from app.db.database import init_mongo
-    from app.parser.driver import SeleniumDriver
-    javtiful_adapter = JavtifulAdapter()
-
-    async def test_run():
-        await init_mongo()
-        all_categories = await Category.find_all().to_list()
-        all_tags = await Tag.find_all().to_list()
-        video = await Video.find_one(Video.jav_code == "TEK-077")
-        with SeleniumDriver(headless=False) as driver:
-            selenium = SeleniumService(driver)
-            await javtiful_adapter.enrich_video_with_javtiful_data(video, all_categories, all_tags, selenium)
-
-    asyncio.run(test_run())
+        return video
