@@ -86,6 +86,9 @@ class Video(Document):
 
     sources: list[VideoSource] = Field(default_factory=list)
 
+    javct_enriched: bool = False
+    javtiful_enriched: bool = False
+
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
