@@ -22,6 +22,7 @@ def _is_retryable_error(e: BaseException) -> bool:
 class GSpreadsheetAPI:
     def __init__(self, sheet_id: str = config.G_SPREADSHEET_ID, creds: str = config.G_SPREADSHEET_CREDS):
         self._sheet_id = sheet_id
+        creds = creds.replace("\n", "\\n")
         service = build(
             "sheets",
             "v4",
