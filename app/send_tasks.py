@@ -1,0 +1,3 @@
+from app.infra.worker import download_fresh_videos_from_guru_task_caller
+
+download_fresh_videos_from_guru_task_caller(limit=94)
