@@ -1,7 +1,8 @@
 from datetime import datetime
-from beanie import Document, Link
-from pydantic import Field, BaseModel, HttpUrl, model_validator
 from typing import Literal
+
+from beanie import Document, Link
+from pydantic import BaseModel, Field, HttpUrl, model_validator
 
 
 class Studio(Document):
@@ -34,6 +35,7 @@ class Model(Document):
     class Settings:
         name = "models"
 
+
 class Category(Document):
     name: str
     source_url: HttpUrl | None = None
@@ -63,6 +65,7 @@ class VideoSource(BaseModel):
     hash_md5: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class Video(Document):
     title: str
     jav_code: str
@@ -89,10 +92,12 @@ class Video(Document):
     javct_enriched: bool = False
     javtiful_enriched: bool = False
 
+    javguru_status: Literal["parsed", "downloading", "downloaded", "failed", "imported", "deleted"]
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
         name = "videos"
+
 
 # ---------- Scraper Schemas ----------
 class ParsedVideo(BaseModel):
