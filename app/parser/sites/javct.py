@@ -1,6 +1,6 @@
 from loguru import logger
-from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.by import By
 
 from app.db.models import Category, Tag, Video
 from app.parser.interactions import SeleniumService
@@ -12,7 +12,7 @@ class JavctAdapter:
     CATEGORIES_URL = "https://javct.net/categories"
 
     def parse_tags(self, selenium: SeleniumService) -> list[Tag]:
-        logger.info(f"[JavctAdapter] Method not implemented")
+        logger.info("[JavctAdapter] Method not implemented")
         return None
 
     def parse_categories(self, selenium: SeleniumService) -> list[Category]:
@@ -31,7 +31,7 @@ class JavctAdapter:
                 logger.warning(f"[JavctAdapter] Failed to parse category element: {e}")
 
         return list(categories.values())
-    
+
     def enrich_video(
         self, selenium: SeleniumService, video: Video, all_categories: list[Category], all_tags: list[Tag]
     ) -> Video:
@@ -39,7 +39,9 @@ class JavctAdapter:
         search_url = f"{self.BASE_URL}/v/{video.jav_code.lower()}"
         selenium.get(search_url)
         categories_found = []
-        categories_list_el = selenium.find_first("/html/body/section[2]/div[2]/div/div[1]/div/div[1]/div/div/div/div[2]/div/ul/li[5]")
+        categories_list_el = selenium.find_first(
+            "/html/body/section[2]/div[2]/div/div[1]/div/div[1]/div/div/div/div[2]/div/ul/li[5]"
+        )
         if not categories_list_el:
             logger.info(f"[!] Search on Javct failed: video {video.jav_code} not found")
             return video

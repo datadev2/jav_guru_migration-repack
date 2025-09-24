@@ -15,9 +15,9 @@ def init_logger():
     logger.remove()
 
     logger.add(
-        sys.stdout, 
-        level="INFO", 
-        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level}</level> | {message}"
+        sys.stdout,
+        level="INFO",
+        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level}</level> | {message}",
     )
 
     logger.add(
@@ -29,5 +29,5 @@ def init_logger():
         format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function}:{line} - {message}",
         enqueue=True,
         backtrace=True,
-        diagnose=True
+        diagnose=True,
     )

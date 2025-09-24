@@ -1,10 +1,11 @@
-from io import BytesIO
 from dataclasses import dataclass
+from io import BytesIO
+
 import aiohttp
 
-from app.download.utils import calculate_md5, extract_filename
-from app.download.exceptions import DownloadFailedException
 from app.config import config
+from app.download.exceptions import DownloadFailedException
+from app.download.utils import calculate_md5, extract_filename
 
 
 @dataclass
@@ -34,9 +35,7 @@ class Downloader:
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.get(url, headers=headers) as response:
                 if response.status != 200:
-                    raise DownloadFailedException(
-                        f"Download failed with status {response.status} for {url}"
-                    )
+                    raise DownloadFailedException(f"Download failed with status {response.status} for {url}")
 
                 chunks: list[bytes] = []
 
@@ -46,13 +45,9 @@ class Downloader:
                         break
                     chunks.append(chunk)
 
-                content = b''.join(chunks)
+                content = b"".join(chunks)
                 file_obj = BytesIO(content)
                 filename = extract_filename(url)
                 md5_hash = calculate_md5(file_obj)
 
-                return DownloadedFile(
-                    content=file_obj, 
-                    filename=filename, 
-                    md5=md5_hash
-                )
+                return DownloadedFile(content=file_obj, filename=filename, md5=md5_hash)

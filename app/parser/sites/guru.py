@@ -1,11 +1,12 @@
-import time
 import re
-from selenium.webdriver.common.by import By
-from dateutil import parser as dateparser
+import time
 
-from app.db.models import Category, Studio, ParsedVideo, Tag, Model
-from app.parser.interactions import SeleniumService
+from dateutil import parser as dateparser
 from loguru import logger
+from selenium.webdriver.common.by import By
+
+from app.db.models import Category, Model, ParsedVideo, Studio, Tag
+from app.parser.interactions import SeleniumService
 
 
 class GuruAdapter:
@@ -19,7 +20,7 @@ class GuruAdapter:
     def _open_video_tab(selenium: SeleniumService, url: str) -> None:
         selenium.driver.execute_script(f"window.open('{url}', '_blank');")
         selenium.driver.switch_to.window(selenium.driver.window_handles[-1])
-        
+
     @staticmethod
     def _close_video_tab(selenium: SeleniumService, main_window: str) -> None:
         selenium.driver.close()
@@ -38,7 +39,7 @@ class GuruAdapter:
             if "uncensored" in href or "uncensored" in text:
                 return True
         return False
-    
+
     def _get_last_page(self, selenium: SeleniumService) -> int:
         try:
             el = selenium.find_first("//a[@class='last']")
@@ -69,7 +70,7 @@ class GuruAdapter:
                 return None
 
             selenium.driver.execute_script("arguments[0].click();", btn)
-    
+
             # --- Step 2: first iframe ---
             first_iframe = selenium.wait_for_element((By.CSS_SELECTOR, "iframe[src*='jav.guru/searcho/']"), timeout=30)
 
@@ -83,10 +84,7 @@ class GuruAdapter:
             selenium.driver.execute_script("arguments[0].click();", play_btn)
 
             # --- Step 3: second iframe ---
-            second_iframe = selenium.wait_for_element(
-                (By.XPATH, "//iframe[not(contains(@src, '.jpg'))]"),
-                timeout=60
-            )
+            second_iframe = selenium.wait_for_element((By.XPATH, "//iframe[not(contains(@src, '.jpg'))]"), timeout=60)
             selenium.driver.switch_to.frame(second_iframe)
 
             streamtape_url = selenium.driver.execute_script("return document.location.href;")
@@ -129,7 +127,7 @@ class GuruAdapter:
                 selenium.driver.switch_to.default_content()
             except Exception:
                 pass
-   
+
     def parse_studios(self, selenium: SeleniumService) -> list[Studio]:
         selenium.get(self.STUDIO_URL, (By.XPATH, "//main[@id='main']//ul/li"))
 
@@ -146,7 +144,7 @@ class GuruAdapter:
                 logger.warning(f"[GuruAdapter] Failed to parse studio element: {e}")
 
         return list(studios.values())
-    
+
     def parse_tags(self, selenium: SeleniumService) -> list[Tag]:
         selenium.get(self.TAG_URL, (By.XPATH, "//div[@id='content']//li/a[@rel='tag']"))
 
@@ -165,7 +163,7 @@ class GuruAdapter:
                 logger.warning(f"[GuruAdapter] Failed to parse tag element: {e}")
 
         return list(tags.values())
-    
+
     def parse_categories(self, selenium: SeleniumService) -> list[Category]:
         selenium.get(self.CATEGORY_URL, (By.XPATH, "//div[@class='dropdown-menu']/div"))
 
@@ -242,17 +240,12 @@ class GuruAdapter:
         return self.parse_people(selenium, "jav-directors-list", "director")
 
     def parse_videos(
-            self, 
-            selenium: SeleniumService,
-            start_page: int | None = None, 
-            end_page: int | None = None
-        ) -> list[ParsedVideo]:
-
+        self, selenium: SeleniumService, start_page: int | None = None, end_page: int | None = None
+    ) -> list[ParsedVideo]:
         if start_page is None:
             start_page = self._get_last_page(selenium)
         if end_page is None:
             end_page = 1
-
 
         videos: list[ParsedVideo] = []
         for page in range(start_page, end_page - 1, -1):
@@ -264,7 +257,7 @@ class GuruAdapter:
             if not cards:
                 logger.info(f"[GuruAdapter] No cards found, stop at page {page}")
                 break
-            
+
             for idx, card in enumerate(reversed(cards), start=1):
                 try:
                     a = card.find_element(By.XPATH, ".//div[contains(@class,'grid1')]//h2/a")
@@ -322,12 +315,10 @@ class GuruAdapter:
         video.categories = [c.text.strip() for c in cats if c.text.strip()]
         logger.info(f"[GuruAdapter] {video.jav_code} categories parsed: {video.categories}")
 
-
         # directors
         dirs = selenium.find_elements("//li[strong[text()='Director:']]/a")
         video.directors = [d.text.strip() for d in dirs if d.text.strip()]
         logger.info(f"[GuruAdapter] {video.jav_code} directors parsed: {video.directors}")
-
 
         # studio
         studio_el = selenium.find_first("//li[strong[text()='Studio:']]/a")

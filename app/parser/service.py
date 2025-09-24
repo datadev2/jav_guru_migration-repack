@@ -4,10 +4,10 @@ from beanie import Document
 from beanie.operators import In
 from loguru import logger
 
-from app.db.models import Category, Video, Studio, Tag, Model
+from app.db.models import Category, Model, Studio, Tag, Video
+from app.parser.base import ParserAdapter
 from app.parser.driver import SeleniumDriver
 from app.parser.interactions import SeleniumService
-from app.parser.base import ParserAdapter
 
 
 class Parser(SeleniumDriver):
@@ -53,7 +53,7 @@ class Parser(SeleniumDriver):
             logger.info(f"[Parser] Inserted {len(to_insert)} new {model.__name__}s")
 
         return len(to_insert)
-    
+
     async def get_studios(self) -> int:
         """
         Crawl site and insert unique studios into MongoDB.
@@ -145,11 +145,7 @@ class Parser(SeleniumDriver):
             build_fn=lambda m: m,
         )
 
-    async def get_videos(
-        self,
-        start_page: int | None = None,
-        end_page: int = 1
-    ):
+    async def get_videos(self, start_page: int | None = None, end_page: int = 1):
         raw_videos = self.adapter.parse_videos(
             self.selenium,
             start_page=start_page,
@@ -170,17 +166,14 @@ class Parser(SeleniumDriver):
                 thumbnail_url=v.thumbnail_url,
             ),
         )
-    
+
     async def get_videos_data(self, max_videos: int | None = None):
         """
         Enrich existing video entries with detailed information from their pages.
         Args:
             max_videos: maximum number of videos to enrich (None = process all).
         """
-        query = Video.find(
-            Video.site == self.adapter.site_name,
-            Video.studio == None
-        )
+        query = Video.find(Video.site == self.adapter.site_name, Video.studio == None)  # noqa E711
         videos = await query.to_list()
         if max_videos:
             videos = videos[:max_videos]
@@ -200,45 +193,32 @@ class Parser(SeleniumDriver):
 
             if parsed.categories:
                 video.categories = await Category.find(
-                    In(Category.name, parsed.categories),
-                    Category.site == self.adapter.site_name
+                    In(Category.name, parsed.categories), Category.site == self.adapter.site_name
                 ).to_list()
 
             if parsed.tags:
-                video.tags = await Tag.find(
-                    In(Tag.name, parsed.tags),
-                    Tag.site == self.adapter.site_name
-                ).to_list()
+                video.tags = await Tag.find(In(Tag.name, parsed.tags), Tag.site == self.adapter.site_name).to_list()
 
             if parsed.directors:
                 video.directors = await Model.find(
-                    In(Model.name, parsed.directors),
-                    Model.type == "director",
-                    Model.site == self.adapter.site_name
+                    In(Model.name, parsed.directors), Model.type == "director", Model.site == self.adapter.site_name
                 ).to_list()
 
             if parsed.actors:
                 video.actors = await Model.find(
-                    In(Model.name, parsed.actors),
-                    Model.type == "actor",
-                    Model.site == self.adapter.site_name
+                    In(Model.name, parsed.actors), Model.type == "actor", Model.site == self.adapter.site_name
                 ).to_list()
 
             if parsed.actresses:
                 video.actresses = await Model.find(
-                    In(Model.name, parsed.actresses),
-                    Model.type == "actress",
-                    Model.site == self.adapter.site_name
+                    In(Model.name, parsed.actresses), Model.type == "actress", Model.site == self.adapter.site_name
                 ).to_list()
 
             if parsed.studio:
-                studio = await Studio.find_one(
-                    Studio.name == parsed.studio,
-                    Studio.site == self.adapter.site_name
-                )
+                studio = await Studio.find_one(Studio.name == parsed.studio, Studio.site == self.adapter.site_name)
                 if studio:
                     video.studio = studio
-            
+
             await video.save()
             logger.info(f"[Parser] Updated {video.jav_code} | {video.title[:50]}...")
 
@@ -256,6 +236,4 @@ class Parser(SeleniumDriver):
             logger.info(f"Enriching video document {video.jav_code} with data from {site_name}...")
             video_enriched = self.adapter.enrich_video(self.selenium, video, all_categories, all_tags)
             await video_enriched.save()
-            logger.success(
-                f"Video {video.jav_code} has been processed using {site_name} adapter and saved"
-            )
+            logger.success(f"Video {video.jav_code} has been processed using {site_name} adapter and saved")

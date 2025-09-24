@@ -11,7 +11,7 @@ class CSVDump:
     def __init__(self, schema: Type[BaseModel], delimiter=";"):
         self._schema = schema
         self._delimiter = delimiter
-    
+
     def __call__(self, videos: list[Video]) -> str:
         validated_data = []
         for video in videos:

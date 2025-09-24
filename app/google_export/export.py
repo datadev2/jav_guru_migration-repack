@@ -7,7 +7,7 @@ from app.google_export.gsheets import gsheets
 
 
 class GSheetService:
-    def __init__(self, gsheet_api = gsheets):
+    def __init__(self, gsheet_api=gsheets):
         self._gsheets_api = gsheet_api
         self._gsheet_id = config.G_SPREADSHEET_ID
         self._gsheet_tab = config.G_SPREADSHEET_TAB
@@ -19,10 +19,7 @@ class GSheetService:
             self._gsheet_id, self._gsheet_tab, gsheet_read_range
         )
         if write_start_row != 0:
-            mongo_videos = [
-                video for video in mongo_videos_
-                if str(video.id) > latest_exported_mongo_id
-            ]
+            mongo_videos = [video for video in mongo_videos_ if str(video.id) > latest_exported_mongo_id]
             for video in mongo_videos:
                 sources_as_dict = {source.origin: (source.s3_path, source.resolution) for source in video.sources}
                 data_to_export.append(
@@ -51,22 +48,19 @@ class GSheetService:
                 )
             self._gsheets_api.write_to_sheet(data_to_export, self._gsheet_tab, f"A{write_start_row}", self._gsheet_id)
 
+    def _get_latest_exported_video(self, gsheet_id: str, gsheet_tab: str, gsheet_read_range: str) -> tuple[str, int]:
+        exported_videos = self._gsheets_api.read_sheet(gsheet_tab, gsheet_read_range, gsheet_id)
+        if not exported_videos:
+            return "", 2
+        try:
+            last_exported_video = exported_videos[-1]
+            last_exported_mongo_id = last_exported_video[0]
+            write_start_row_num = len(exported_videos) + 2  # Because the first row with data is the row #2.
+            return last_exported_mongo_id, write_start_row_num
+        except IndexError:
+            logger.error("[!] ERROR! Failed to get latest exported video ID due to IndexError!")
+            return "", 0
 
-    def _get_latest_exported_video(
-            self, gsheet_id: str, gsheet_tab: str, gsheet_read_range: str
-        ) -> tuple[str, int]:
-            exported_videos = self._gsheets_api.read_sheet(gsheet_tab, gsheet_read_range, gsheet_id)
-            if not exported_videos:
-                return "", 2
-            try:
-                last_exported_video = exported_videos[-1]
-                last_exported_mongo_id = last_exported_video[0]
-                write_start_row_num = len(exported_videos) + 2  # Because the first row with data is the row #2.
-                return last_exported_mongo_id, write_start_row_num
-            except IndexError:
-                logger.error("[!] ERROR! Failed to get latest exported video ID due to IndexError!")
-                return "", 0
-        
 
 if __name__ == "__main__":
     import asyncio

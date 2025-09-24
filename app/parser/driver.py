@@ -31,7 +31,7 @@ class SeleniumDriver:
         options.add_argument("--ignore-certificate-errors")
 
         prefs = {
-            "profile.managed_default_content_settings.images": 2,   # off images
+            "profile.managed_default_content_settings.images": 2,  # off images
             "profile.managed_default_content_settings.javascript": 1,  # on js
             "profile.managed_default_content_settings.notifications": 2,  # off notifications
             "profile.managed_default_content_settings.media_stream": 2,  # off media
@@ -54,7 +54,7 @@ class SeleniumDriver:
             fix_hairline=True,
             run_on_insecure_origins=True,
         )
-                
+
     def __enter__(self):
         return self.driver
 

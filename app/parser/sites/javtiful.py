@@ -11,7 +11,6 @@ class JavtifulAdapter:
     BASE_URL = "https://javtiful.com"
     CATEGORIES_URL = "https://javtiful.com/categories"
 
-
     def parse_categories(self, selenium: SeleniumService) -> list[Category]:
         selenium.get(self.CATEGORIES_URL, (By.XPATH, "//span[@class='label-category']"))
 
@@ -29,7 +28,7 @@ class JavtifulAdapter:
                 logger.warning(f"[JavtifulAdapter] Failed to parse category element: {e}")
 
         return list(categories.values())
-    
+
     def enrich_video(
         self,
         selenium: SeleniumService,

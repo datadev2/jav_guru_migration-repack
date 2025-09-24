@@ -1,11 +1,12 @@
 from typing import Optional, Tuple
+
+from loguru import logger
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
-from selenium.common.exceptions import TimeoutException
-from loguru import logger
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 class SeleniumService:
@@ -23,7 +24,6 @@ class SeleniumService:
         except Exception as e:
             logger.error(f"Failed to get URL {url}: {e}", exc_info=True)
 
-
     def wait_for_element(self, element: Tuple[By, str], timeout: Optional[int] = None):
         try:
             wait = WebDriverWait(self.driver, timeout or self._wait._timeout)
@@ -36,7 +36,6 @@ class SeleniumService:
             logger.warning(f"Element not found: {element} | {e}", exc_info=True)
             return None
 
-        
     def wait_for_elements(self, selector: Tuple[By, str]) -> list[WebElement]:
         try:
             elements = self._wait.until(ec.presence_of_all_elements_located(selector))
