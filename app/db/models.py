@@ -92,7 +92,7 @@ class Video(Document):
     javct_enriched: bool = False
     javtiful_enriched: bool = False
 
-    javguru_status: Literal["parsed", "downloading", "downloaded", "failed", "imported", "deleted"]
+    javguru_status: Literal["added", "parsed", "downloading", "downloaded", "failed", "imported", "deleted"]
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
