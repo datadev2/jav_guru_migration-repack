@@ -164,6 +164,7 @@ class Parser(SeleniumDriver):
                 page_link=v.page_link,
                 site=v.site,
                 thumbnail_url=v.thumbnail_url,
+                javguru_status="added",
             ),
         )
 
@@ -218,7 +219,7 @@ class Parser(SeleniumDriver):
                 studio = await Studio.find_one(Studio.name == parsed.studio, Studio.site == self.adapter.site_name)
                 if studio:
                     video.studio = studio
-
+            video.javguru_status = "parsed"
             await video.save()
             logger.info(f"[Parser] Updated {video.jav_code} | {video.title[:50]}...")
 
