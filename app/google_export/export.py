@@ -48,6 +48,25 @@ class GSheetService:
                 )
             self._gsheets_api.write_to_sheet(data_to_export, self._gsheet_tab, f"A{write_start_row}", self._gsheet_id)
 
+    async def update_rewritten_titles(self, gsheet_id: str | None = None):
+        sheet_id = gsheet_id or self._gsheet_id
+        exported_videos = self._gsheets_api.read_sheet(self._gsheet_tab, "A2:A", sheet_id)
+        if not exported_videos:
+            logger.info("No exported videos found in sheet")
+            return
+
+        updates = []
+        for idx, row in enumerate(exported_videos, start=2):
+            mongo_id = row[0]
+            video = await Video.get(mongo_id)
+            if video and video.rewritten_title:
+                updates.append([video.rewritten_title])
+            else:
+                updates.append([""])
+        if updates:
+            self._gsheets_api.write_to_sheet(updates, self._gsheet_tab, "G2", sheet_id)
+            logger.info(f"Updated rewritten titles for {len(updates)} rows")
+
     def _get_latest_exported_video(self, gsheet_id: str, gsheet_tab: str, gsheet_read_range: str) -> tuple[str, int]:
         exported_videos = self._gsheets_api.read_sheet(gsheet_tab, gsheet_read_range, gsheet_id)
         if not exported_videos:
@@ -62,12 +81,27 @@ class GSheetService:
             return "", 0
 
 
+class PromptService:
+    def __init__(self, gsheet_api=gsheets):
+        self._gsheets_api = gsheet_api
+        self._sheet_id = config.G_SPREADSHEET_ID
+        self._tab_name = config.G_SPREADSHEET_TAB_PROMPT
+
+    def get_prompt(self, cell: str = "B1") -> str:
+        values = self._gsheets_api.read_sheet(self._tab_name, cell, self._sheet_id)
+        if values and values[0] and values[0][0]:
+            logger.info(str(values[0][0]))
+            return str(values[0][0])
+        return config.PROMPT_DEFAULT
+
+
 if __name__ == "__main__":
     import asyncio
 
     async def main():
         await init_mongo()
         gsh_svc = GSheetService()
-        await gsh_svc.update_export_data_to_gsheet()
+        # await gsh_svc.update_export_data_to_gsheet()
+        await gsh_svc.update_rewritten_titles()
 
     asyncio.run(main())
