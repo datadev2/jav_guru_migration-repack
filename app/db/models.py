@@ -68,6 +68,7 @@ class VideoSource(BaseModel):
 
 class Video(Document):
     title: str
+    rewritten_title: str | None = None
     jav_code: str
     page_link: HttpUrl
     site: str = Field(default="unknown")
