@@ -1,18 +1,22 @@
-import pytest
 from io import BytesIO
+
+import pytest
 
 from app.db.models import Video, VideoSource
 from app.download.service import GuruDownloader
 
 
 # ---------- UNIT TESTS ----------
-@pytest.mark.parametrize("height,expected", [
-    (240, "480p"),
-    (720, "720p"),
-    (1080, "1080p"),
-    (1440, "2k"),
-    (2160, "4k"),
-])
+@pytest.mark.parametrize(
+    "height,expected",
+    [
+        (240, "480p"),
+        (720, "720p"),
+        (1080, "1080p"),
+        (1440, "2k"),
+        (2160, "4k"),
+    ],
+)
 def test_detect_resolution(monkeypatch, height, expected):
     """
     Ensure that _detect_resolution correctly maps video height -> resolution string.
@@ -22,26 +26,29 @@ def test_detect_resolution(monkeypatch, height, expected):
 
     class FakeTrack:
         track_type = "Video"
-        def __init__(self, h): self.height = h
+
+        def __init__(self, h):
+            self.height = h
 
     class FakeMediaInfo:
-        def __init__(self, h): self.tracks = [FakeTrack(h)]
+        def __init__(self, h):
+            self.tracks = [FakeTrack(h)]
 
-    monkeypatch.setattr(
-        "app.download.service.MediaInfo.parse",
-        lambda *_: FakeMediaInfo(height)
-    )
+    monkeypatch.setattr("app.download.service.MediaInfo.parse", lambda *_: FakeMediaInfo(height))
 
     d = GuruDownloader(None, None)
     res = d._detect_resolution(buf, "test.mp4")
     assert res == expected
 
 
-@pytest.mark.parametrize("duration,expected", [
-    (60_000, 1),
-    (125_000, 2),
-    (3_600_000, 60),
-])
+@pytest.mark.parametrize(
+    "duration,expected",
+    [
+        (60_000, 1),
+        (125_000, 2),
+        (3_600_000, 60),
+    ],
+)
 def test_detect_runtime(monkeypatch, duration, expected):
     """
     Ensure that _detect_runtime correctly converts duration (ms) -> minutes.
@@ -51,15 +58,15 @@ def test_detect_runtime(monkeypatch, duration, expected):
 
     class FakeTrack:
         track_type = "Video"
-        def __init__(self, d): self.duration = d
+
+        def __init__(self, d):
+            self.duration = d
 
     class FakeMediaInfo:
-        def __init__(self, d): self.tracks = [FakeTrack(d)]
+        def __init__(self, d):
+            self.tracks = [FakeTrack(d)]
 
-    monkeypatch.setattr(
-        "app.download.service.MediaInfo.parse",
-        lambda *_: FakeMediaInfo(duration)
-    )
+    monkeypatch.setattr("app.download.service.MediaInfo.parse", lambda *_: FakeMediaInfo(duration))
 
     d = GuruDownloader(None, None)
     res = d._detect_runtime(buf, "test.mp4")
@@ -74,15 +81,18 @@ async def test_download_one_full_video(monkeypatch, init_db):
     """
 
     class DummyParser:
-        def _extract_video_src(self, *_ , **__): return "http://fake/video.mp4"
+        def _extract_video_src(self, *_, **__):
+            return "http://fake/video.mp4"
 
     class DummySelenium:
-        def get(self, *_ , **__): return None
+        def get(self, *_, **__):
+            return None
 
-    async def fake_download(url, *_ , **__):
+    async def fake_download(url, *_, **__):
         return BytesIO(b"0" * 2048)
 
-    async def fake_put(buf, key): return True
+    async def fake_put(buf, key):
+        return True
 
     monkeypatch.setattr("app.download.service.GuruDownloader._download_to_buffer", fake_download)
     monkeypatch.setattr("app.download.service.s3.put_object", fake_put)
@@ -116,7 +126,6 @@ async def test_download_one_full_video(monkeypatch, init_db):
     )
     await video.insert()
 
-
     d = GuruDownloader(DummySelenium(), DummyParser())
     ok = await d.download_one(video)
     assert ok
@@ -138,7 +147,7 @@ async def test_download_one_full_video(monkeypatch, init_db):
     origins = [s.origin for s in saved.sources]
     assert "pornolab" in origins
     assert "guru" in origins
-    
+
     guru_src = next(s for s in saved.sources if s.origin == "guru")
     assert guru_src.resolution == "1080p"
     assert guru_src.file_size == 2048
@@ -155,15 +164,18 @@ async def test_download_one_sets_runtime(monkeypatch, init_db):
     """
 
     class DummyParser:
-        def _extract_video_src(self, *_ , **__): return "http://fake/video.mp4"
+        def _extract_video_src(self, *_, **__):
+            return "http://fake/video.mp4"
 
     class DummySelenium:
-        def get(self, *_ , **__): return None
+        def get(self, *_, **__):
+            return None
 
-    async def fake_download(url, *_ , **__):
+    async def fake_download(url, *_, **__):
         return BytesIO(b"0" * 1024)
 
-    async def fake_put(buf, key): return True
+    async def fake_put(buf, key):
+        return True
 
     monkeypatch.setattr("app.download.service.GuruDownloader._download_to_buffer", fake_download)
     monkeypatch.setattr("app.download.service.s3.put_object", fake_put)
@@ -189,15 +201,18 @@ async def test_download_one_inserts_source(monkeypatch, init_db):
     """
 
     class DummyParser:
-        def _extract_video_src(self, *_ , **__): return "http://fake/video.mp4"
+        def _extract_video_src(self, *_, **__):
+            return "http://fake/video.mp4"
 
     class DummySelenium:
-        def get(self, *_ , **__): return None
+        def get(self, *_, **__):
+            return None
 
-    async def fake_download(url, *_ , **__):
+    async def fake_download(url, *_, **__):
         return BytesIO(b"0" * 1024)
 
-    async def fake_put(buf, key): return True
+    async def fake_put(buf, key):
+        return True
 
     monkeypatch.setattr("app.download.service.GuruDownloader._download_to_buffer", fake_download)
     monkeypatch.setattr("app.download.service.s3.put_object", fake_put)
@@ -211,6 +226,7 @@ async def test_download_one_inserts_source(monkeypatch, init_db):
     assert ok
 
     import asyncio
+
     await asyncio.sleep(1)
 
     saved = await Video.find_one(Video.jav_code == "TST-001")
@@ -246,15 +262,18 @@ async def test_append_second_source(monkeypatch, init_db):
     await video.insert()
 
     class DummyParser:
-        def _extract_video_src(self, *_ , **__): return "http://fake/video2.mp4"
+        def _extract_video_src(self, *_, **__):
+            return "http://fake/video2.mp4"
 
     class DummySelenium:
-        def get(self, *_ , **__): return None
+        def get(self, *_, **__):
+            return None
 
-    async def fake_download(url, *_ , **__):
+    async def fake_download(url, *_, **__):
         return BytesIO(b"1" * 2048)
 
-    async def fake_put(buf, key): return True
+    async def fake_put(buf, key):
+        return True
 
     monkeypatch.setattr("app.download.service.GuruDownloader._download_to_buffer", fake_download)
     monkeypatch.setattr("app.download.service.s3.put_object", fake_put)

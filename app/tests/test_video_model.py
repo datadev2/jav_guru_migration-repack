@@ -1,7 +1,6 @@
 import pytest
 
-from app.db.models import Video, VideoSource, Category, Tag, Model, Studio
-from app.config import config
+from app.db.models import Video, VideoSource
 
 
 @pytest.mark.asyncio
