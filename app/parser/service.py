@@ -54,96 +54,38 @@ class Parser(SeleniumDriver):
 
         return len(to_insert)
 
-    async def get_studios(self) -> int:
-        """
-        Crawl site and insert unique studios into MongoDB.
-        """
-        raw_studios = self.adapter.parse_studios(self.selenium)
-
-        logger.info(f"[Parser] Found {len(raw_studios)} raw studios from {self.adapter.site_name}")
-
+    async def _load_and_insert(
+        self,
+        model: type[Document],
+        parser_fn: Callable,
+        label: str,
+    ) -> int:
+        raw_items = parser_fn(self.selenium)
+        logger.info(f"[Parser] Found {len(raw_items)} {label} from {self.adapter.site_name}")
         return await self._insert_unique(
-            Studio,
-            raw_studios,
-            key_fn=lambda studio: studio.name,
-            build_fn=lambda studio: studio,
+            model,
+            raw_items,
+            key_fn=lambda x: x.name,
+            build_fn=lambda x: x,
         )
 
-    async def get_tags(self) -> int:
-        """
-        Crawl site and insert unique tags into MongoDB.
-        """
-        raw_tags = self.adapter.parse_tags(self.selenium)
+    async def get_studios(self):
+        return await self._load_and_insert(Studio, self.adapter.parse_studios, "studios")
 
-        logger.info(f"[Parser] Found {len(raw_tags)} raw tags from {self.adapter.site_name}")
+    async def get_tags(self):
+        return await self._load_and_insert(Tag, self.adapter.parse_tags, "tags")
 
-        return await self._insert_unique(
-            Tag,
-            raw_tags,
-            key_fn=lambda tag: tag.name,
-            build_fn=lambda tag: tag,
-        )
+    async def get_categories(self):
+        return await self._load_and_insert(Category, self.adapter.parse_categories, "categories")
 
-    async def get_categories(self) -> int:
-        """
-        Crawl site and insert unique categories into MongoDB.
-        For Guru: categories == tags (same source).
-        """
-        raw_categories = self.adapter.parse_categories(self.selenium)
+    async def get_actresses(self):
+        return await self._load_and_insert(Model, self.adapter.parse_actress, "actresses")
 
-        logger.info(f"[Parser] Found {len(raw_categories)} raw categories from {self.adapter.site_name}")
+    async def get_actors(self):
+        return await self._load_and_insert(Model, self.adapter.parse_actors, "actors")
 
-        return await self._insert_unique(
-            Category,
-            raw_categories,
-            key_fn=lambda c: c.name,
-            build_fn=lambda c: c,
-        )
-
-    async def get_actresses(self) -> int:
-        """
-        Crawl site and insert unique actresses into MongoDB.
-        """
-        raw_models = self.adapter.parse_actress(self.selenium)
-
-        logger.info(f"[Parser] Found {len(raw_models)} actresses from {self.adapter.site_name}")
-
-        return await self._insert_unique(
-            Model,
-            raw_models,
-            key_fn=lambda m: m.name,
-            build_fn=lambda m: m,
-        )
-
-    async def get_actors(self) -> int:
-        """
-        Crawl site and insert unique actors into MongoDB.
-        """
-        raw_models = self.adapter.parse_actors(self.selenium)
-
-        logger.info(f"[Parser] Found {len(raw_models)} actors from {self.adapter.site_name}")
-
-        return await self._insert_unique(
-            Model,
-            raw_models,
-            key_fn=lambda m: m.name,
-            build_fn=lambda m: m,
-        )
-
-    async def get_directors(self) -> int:
-        """
-        Crawl site and insert unique directors into MongoDB.
-        """
-        raw_models = self.adapter.parse_directors(self.selenium)
-
-        logger.info(f"[Parser] Found {len(raw_models)} directors from {self.adapter.site_name}")
-
-        return await self._insert_unique(
-            Model,
-            raw_models,
-            key_fn=lambda m: m.name,
-            build_fn=lambda m: m,
-        )
+    async def get_directors(self):
+        return await self._load_and_insert(Model, self.adapter.parse_directors, "directors")
 
     async def get_videos(self, start_page: int | None = None, end_page: int = 1):
         raw_videos = self.adapter.parse_videos(
