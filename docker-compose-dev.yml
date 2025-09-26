@@ -1,0 +1,11 @@
+services:
+  celery:
+    build:
+      context: .
+    container_name: jav-guru-downloader
+    env_file:
+      - .env
+    volumes:
+      - /usr/bin/chromedriver:/usr/bin/chromedriver
+      - /usr/bin/adblock.crx:/usr/bin/adblock.crx
+    command: "celery -A app.infra.queue worker --loglevel=INFO --pool=prefork --concurrency=1"

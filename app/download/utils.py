@@ -1,7 +1,6 @@
-from io import BytesIO
 import hashlib
+from io import BytesIO
 from urllib.parse import urlparse
-
 
 
 def calculate_md5(file: BytesIO, chunk_size: int = 65536) -> str:

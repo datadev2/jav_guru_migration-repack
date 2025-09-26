@@ -1,0 +1,23 @@
+{
+  "title": "Test Mock Video",
+  "jav_code": "MOCK-001",
+  "page_link": "https://jav.guru/999/mock-001/",
+  "sources": [
+    {
+      "origin": "guru",
+      "resolution": "480p",
+      "s3_path": "s3://videos/javguru/mock-001-480p.mp4",
+      "file_name": "mock-001-480p.mp4",
+      "file_size": 111,
+      "hash_md5": "mockhash1"
+    },
+    {
+      "origin": "pornolab",
+      "resolution": "1080p",
+      "s3_path": "s3://videos/javguru/mock-001-1080p.mp4",
+      "file_name": "mock-001-1080p.mp4",
+      "file_size": 222,
+      "hash_md5": "mockhash2"
+    }
+  ]
+}

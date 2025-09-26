@@ -1,0 +1,17 @@
+.rsync-exclude
+.env
+.git/
+.gitignore
+.ruff_cache/
+__pycache__/
+README.md
+send_tasks.py
+formatting.sh
+venv/
+downloads/
+docker-compose-dev.yml
+downloader.log
+.vscode/
+.pytest_cache/
+logs/
+docker-compose-dev.yml
