@@ -27,7 +27,8 @@ class Config(BaseSettings):
     SITE_NAME: str
 
     G_SPREADSHEET_ID: str
-    G_SPREADSHEET_TAB: str = "Main"
+    G_SPREADSHEET_MAIN_TAB: str = "Main"
+    G_SPREADSHEET_PORNOLAB_TAB: str = "Pornolab Data"
     G_SPREADSHEET_TAB_PROMPT: str = "Grok Prompt Test"
     G_SPREADSHEET_CREDS: str
 
