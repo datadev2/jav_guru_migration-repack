@@ -60,9 +60,9 @@ class VideoSource(BaseModel):
     origin: str
     resolution: str
     s3_path: str
-    file_name: str
-    file_size: int
-    hash_md5: str
+    file_name: str = ""
+    file_size: int = 0
+    hash_md5: str = ""
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
