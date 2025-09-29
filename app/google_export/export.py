@@ -69,23 +69,18 @@ class GSheetService:
         if updates:
             self._gsheets_api.write_to_sheet(updates, self._gsheet_main_tab, "G2", sheet_id)
             logger.info(f"Updated rewritten titles for {len(updates)} rows")
-    
+
     async def update_s3_paths_and_resolutions(self, read_range: str = "A2:T", write_start_cell: str = "P2"):
         await self._fetch_pornolab_data_and_save_in_mongo()
         data_to_export = []
         mongo_data = await Video.find({"sources.0": {"$exists": True}}).to_list()
         exported_data = self._gsheets_api.read_sheet(self._gsheet_main_tab, read_range, self._gsheet_id)
         exported_dict = {row[0]: row for row in exported_data}
-        combined_data = [
-            (video, exported_dict.get(str(video.id), []))
-            for video in mongo_data
-        ]
+        combined_data = [(video, exported_dict.get(str(video.id), [])) for video in mongo_data]
         for pair in combined_data:
             row_to_export = self._fetch_row_to_export(pair)
             data_to_export.append(row_to_export)
-        self._gsheets_api.write_to_sheet(
-                data_to_export, self._gsheet_main_tab, write_start_cell, self._gsheet_id
-            )
+        self._gsheets_api.write_to_sheet(data_to_export, self._gsheet_main_tab, write_start_cell, self._gsheet_id)
 
     def _get_latest_exported_video(self, gsheet_id: str, gsheet_tab: str, gsheet_read_range: str) -> tuple[str, int]:
         exported_videos = self._gsheets_api.read_sheet(gsheet_tab, gsheet_read_range, gsheet_id)
@@ -99,7 +94,7 @@ class GSheetService:
         except IndexError:
             logger.error("[!] ERROR! Failed to get latest exported video ID due to IndexError!")
             return "", 0
-    
+
     async def _fetch_pornolab_data_and_save_in_mongo(self, read_range: str = "B2:M") -> None:
         pl_excel_data = self._gsheets_api.read_sheet(self._pornolab_tab, read_range, self._gsheet_id)
         for row in pl_excel_data:
@@ -132,18 +127,14 @@ class GSheetService:
         if not excel_row[16] or not excel_row[18]:
             mongo_video = mongo_and_excel_combined_data[0]
             runtime = mongo_video.runtime_minutes
-            jav_s3_path, jav_resolution = next((
-                (
-                    source.s3_path,
-                    source.resolution
-                ) for source in mongo_video.sources if source.origin == "guru"
-            ), ("", ""))
-            pornolab_s3_path, pornolab_resolution = next((
-                (
-                    source.s3_path,
-                    source.resolution
-                ) for source in mongo_video.sources if source.origin == "pornolab"
-            ), ("", ""))
+            jav_s3_path, jav_resolution = next(
+                ((source.s3_path, source.resolution) for source in mongo_video.sources if source.origin == "guru"),
+                ("", ""),
+            )
+            pornolab_s3_path, pornolab_resolution = next(
+                ((source.s3_path, source.resolution) for source in mongo_video.sources if source.origin == "pornolab"),
+                ("", ""),
+            )
             return [runtime, jav_s3_path, jav_resolution, pornolab_s3_path, pornolab_resolution]
         return [excel_row[i] for i in range(15, 20)]
 
