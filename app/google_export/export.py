@@ -2,7 +2,7 @@ from loguru import logger
 
 from app.config import config
 from app.db.database import init_mongo
-from app.db.models import Video
+from app.db.models import Video, VideoSource
 from app.google_export.gsheets import gsheets
 
 
@@ -71,6 +71,7 @@ class GSheetService:
             logger.info(f"Updated rewritten titles for {len(updates)} rows")
     
     async def update_s3_paths_and_resolutions(self, read_range: str = "A2:T", write_start_cell: str = "P2"):
+        await self._fetch_pornolab_data_and_save_in_mongo()
         data_to_export = []
         mongo_data = await Video.find({"sources.0": {"$exists": True}}).to_list()
         exported_data = self._gsheets_api.read_sheet(self._gsheet_main_tab, read_range, self._gsheet_id)
@@ -83,7 +84,7 @@ class GSheetService:
             row_to_export = self._fetch_row_to_export(pair)
             data_to_export.append(row_to_export)
         self._gsheets_api.write_to_sheet(
-                data_to_export, self._pornolab_tab, write_start_cell, self._gsheet_id
+                data_to_export, self._gsheet_main_tab, write_start_cell, self._gsheet_id
             )
 
     def _get_latest_exported_video(self, gsheet_id: str, gsheet_tab: str, gsheet_read_range: str) -> tuple[str, int]:
@@ -99,6 +100,30 @@ class GSheetService:
             logger.error("[!] ERROR! Failed to get latest exported video ID due to IndexError!")
             return "", 0
     
+    async def _fetch_pornolab_data_and_save_in_mongo(self, read_range: str = "B2:M") -> None:
+        pl_excel_data = self._gsheets_api.read_sheet(self._pornolab_tab, read_range, self._gsheet_id)
+        for row in pl_excel_data:
+            try:
+                if row[7] != "✓":
+                    continue
+            except IndexError:
+                continue
+            while len(row) < 12:
+                row.append("")
+            jav_code = row[0]
+            s3_path = row[8]
+            resolution = row[9]
+            video = await Video.find_one(Video.jav_code == jav_code)
+            if not video:
+                continue
+            exists = "pornolab" in [source.origin for source in video.sources]
+            if exists:
+                continue
+            video.sources.append(VideoSource(origin="pornolab", resolution=resolution, s3_path=s3_path))
+            await video.save()
+            row[-1] = "✓"
+        self._gsheets_api.write_to_sheet(pl_excel_data, self._pornolab_tab, "B2", self._gsheet_id)
+
     @staticmethod
     def _fetch_row_to_export(mongo_and_excel_combined_data: tuple[Video, list]) -> list:
         excel_row = mongo_and_excel_combined_data[1]
