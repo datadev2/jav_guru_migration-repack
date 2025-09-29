@@ -11,10 +11,13 @@ from app.db.models import Category, Model, Studio, Tag, Video
 
 
 @pytest.fixture(scope="module")
-def mock_video_data():
-    path = Path(__file__).parent / "mocks" / "video_source.json"
-    with path.open() as f:
-        return json.load(f)
+def mock_load_data():
+    def _loader(file_name: str):
+        path = Path(__file__).parent / "mocks" / file_name
+        with path.open(encoding="utf-8") as f:
+            return json.load(f)
+
+    return _loader
 
 
 @pytest_asyncio.fixture
@@ -33,5 +36,10 @@ async def init_db():
         database=db,
         document_models=[Video, Category, Tag, Model, Studio],
     )
+    for coll in await db.list_collection_names():
+        await db.drop_collection(coll)
+
     yield db
+
+    await client.drop_database(db_name)
     client.close()
