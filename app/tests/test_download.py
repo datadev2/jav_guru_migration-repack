@@ -62,7 +62,7 @@ class MockContextManager:
 
 @pytest.mark.asyncio
 async def test_downloader_with_json_mock(mock_load_data):
-    data = mock_load_data("download_cases.json")
+    data = mock_load_data("download_source.json")
     record = data[0]
     source = record["sources"][0]
 
@@ -85,7 +85,7 @@ async def test_downloader_with_json_mock(mock_load_data):
 
 @pytest.mark.asyncio
 async def test_downloader_chunked_read(mock_load_data):
-    data = mock_load_data("download_cases.json")
+    data = mock_load_data("download_source.json")
     record = next(r for r in data if r["jav_code"] == "MOCK-CHUNKS")
     source = record["sources"][0]
 
@@ -111,7 +111,7 @@ async def test_downloader_chunked_read(mock_load_data):
 
 @pytest.mark.asyncio
 async def test_downloader_error_404(mock_load_data):
-    data = mock_load_data("download_cases.json")
+    data = mock_load_data("download_source.json")
     record = next(r for r in data if r["jav_code"] == "MOCK-404")
     source = record["sources"][0]
 
@@ -132,7 +132,7 @@ async def test_downloader_error_404(mock_load_data):
 
 @pytest.mark.asyncio
 async def test_downloader_empty_content(mock_load_data):
-    data = mock_load_data("download_cases.json")
+    data = mock_load_data("download_source.json")
     record = next(r for r in data if r["jav_code"] == "MOCK-EMPTY")
     source = record["sources"][0]
 
