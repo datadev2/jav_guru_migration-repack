@@ -3,6 +3,7 @@
     "title": "Test Mock Video 1",
     "jav_code": "MOCK-001",
     "page_link": "https://jav.guru/999/mock-001/",
+    "javguru_status": "added",
     "sources": [
       {
         "origin": "guru",
@@ -26,6 +27,7 @@
     "title": "Test Mock Video 2",
     "jav_code": "MOCK-002",
     "page_link": "https://jav.guru/999/mock-002/",
+    "javguru_status": "added",
     "sources": [
       {
         "origin": "guru",
@@ -41,6 +43,7 @@
     "title": "Test Mock Video 3",
     "jav_code": "MOCK-003",
     "page_link": "https://jav.guru/999/mock-003/",
+    "javguru_status": "added",
     "sources": [
       {
         "origin": "guru",
@@ -64,6 +67,7 @@
     "title": "Test Mock Video 4",
     "jav_code": "MOCK-004",
     "page_link": "https://jav.guru/999/mock-004/",
+    "javguru_status": "added",
     "sources": [
       {
         "origin": "guru",
@@ -79,6 +83,7 @@
     "title": "Test Mock Video 5",
     "jav_code": "MOCK-005",
     "page_link": "https://jav.guru/999/mock-005/",
+    "javguru_status": "added",
     "sources": [
       {
         "origin": "guru",
@@ -94,6 +99,7 @@
     "title": "Test Mock Video 6",
     "jav_code": "MOCK-006",
     "page_link": "https://jav.guru/999/mock-006/",
+    "javguru_status": "added",
     "sources": [
       {
         "origin": "alt",
@@ -109,6 +115,7 @@
     "title": "Test Mock Video 7",
     "jav_code": "MOCK-007",
     "page_link": "https://jav.guru/999/mock-007/",
+    "javguru_status": "added",
     "sources": [
       {
         "origin": "guru",
@@ -132,6 +139,7 @@
     "title": "Test Mock Video 8",
     "jav_code": "MOCK-008",
     "page_link": "https://jav.guru/999/mock-008/",
+    "javguru_status": "added",
     "sources": [
       {
         "origin": "guru",
@@ -147,6 +155,7 @@
     "title": "Test Mock Video 9",
     "jav_code": "MOCK-009",
     "page_link": "https://jav.guru/999/mock-009/",
+    "javguru_status": "added",
     "sources": [
       {
         "origin": "alt",
@@ -170,6 +179,7 @@
     "title": "Test Mock Video 10",
     "jav_code": "MOCK-010",
     "page_link": "https://jav.guru/999/mock-010/",
+    "javguru_status": "added",
     "sources": [
       {
         "origin": "guru",
@@ -193,6 +203,7 @@
     "title": "Chunked Mock Video",
     "jav_code": "MOCK-CHUNKS",
     "page_link": "https://jav.guru/999/mock-chunks/",
+    "javguru_status": "added",
     "sources": [
       {
         "origin": "guru",
@@ -208,6 +219,7 @@
     "title": "Not Found Video",
     "jav_code": "MOCK-404",
     "page_link": "https://jav.guru/999/mock-404/",
+    "javguru_status": "added",
     "sources": [
       {
         "origin": "guru",
@@ -223,6 +235,7 @@
     "title": "Empty Mock Video",
     "jav_code": "MOCK-EMPTY",
     "page_link": "https://jav.guru/999/mock-empty/",
+    "javguru_status": "added",
     "sources": [
       {
         "origin": "guru",
