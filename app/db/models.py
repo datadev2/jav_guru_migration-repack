@@ -99,9 +99,7 @@ class Video(Document):
 
     class Settings:
         name = "videos"
-        indexes = [
-            IndexModel([("jav_code", 1)], unique=True)
-        ]
+        indexes = [IndexModel([("jav_code", 1)], unique=True)]
 
 
 # ---------- Scraper Schemas ----------
