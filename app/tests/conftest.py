@@ -32,12 +32,13 @@ async def init_db():
     client = AsyncIOMotorClient(uri)
     db = client[db_name]
 
+    for coll in await db.list_collection_names():
+        await db.drop_collection(coll)
+
     await init_beanie(
         database=db,
         document_models=[Video, Category, Tag, Model, Studio],
     )
-    for coll in await db.list_collection_names():
-        await db.drop_collection(coll)
 
     yield db
 
