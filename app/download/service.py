@@ -64,6 +64,7 @@ class GuruDownloader:
                 hash_md5=md5,
             )
             video.sources.append(source)
+            await video.save()
             logger.success(f"OK {s3_filename} | {file_size} bytes | {resolution}")
             return True
         except (DownloadFailedException, DuplicateKeyError) as e:
