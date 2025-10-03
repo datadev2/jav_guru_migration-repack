@@ -27,8 +27,11 @@ async def init_db():
     host = config.DB_HOST
     db_name = "javguru_tests"
 
-    uri = f"mongodb://{user}:{pwd}@{host}/{db_name}?authSource=admin"
-
+    if user and pwd:
+        uri = f"mongodb://{user}:{pwd}@{host}/{db_name}?authSource=admin"
+    else:
+        uri = f"mongodb://{host}/{db_name}"
+        
     client = AsyncIOMotorClient(uri)
     db = client[db_name]
 
