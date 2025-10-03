@@ -41,6 +41,38 @@ jobs:
           poetry lock
           poetry install --no-root
       
+      - name: Debug Python
+        run: |
+          python --version
+          which python
+
+      - name: Debug Poetry
+        run: |
+          poetry --version
+          which poetry
+          head -n 10 poetry.lock
+
+      - name: Debug Environment
+        run: |
+          env | sort
+          ls -la
+          ls -la .github/envs
+
+      - name: Debug Mongo container
+        run: |
+          docker ps -a
+          docker logs $(docker ps -a -q --filter "ancestor=mongo:6.0")
+          ss -lnt | grep 27017 || true
+
+      - name: Debug Vars for Tests
+        run: |
+          set -a
+          source .github/envs/.env.test
+          set +a
+          echo "DB_HOST=$DB_HOST"
+          echo "DB_USER=$DB_USER"
+          echo "DB_PASS=$DB_PASS"
+
       - name: Debug MongoDB container
         run: |
           docker ps -a
