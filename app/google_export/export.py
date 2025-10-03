@@ -71,7 +71,7 @@ class GSheetService:
             logger.info(f"Updated rewritten titles for {len(updates)} rows")
 
     async def update_s3_paths_and_resolutions(self, read_range: str = "A2:T", write_start_cell: str = "P2"):
-        #TODO: check it! Empty s3 paths are exported with false data!
+        # TODO: check it! Empty s3 paths are exported with false data!
         await self._fetch_pornolab_data_and_save_in_mongo()
         data_to_export = []
         mongo_data = await Video.find({"sources.0": {"$exists": True}}).to_list()
@@ -117,13 +117,15 @@ class GSheetService:
             exists = "pornolab" in [source.origin for source in video.sources]
             if exists:
                 continue
-            video.sources.append(VideoSource(
-                origin="pornolab",
-                resolution=resolution,
-                s3_path=s3_path,
-                hash_md5=file_hash,
-            ))
-            video.runtime_minutes=runtime
+            video.sources.append(
+                VideoSource(
+                    origin="pornolab",
+                    resolution=resolution,
+                    s3_path=s3_path,
+                    hash_md5=file_hash,
+                )
+            )
+            video.runtime_minutes = runtime
             await video.save()
             row[-1] = "✓"
         self._gsheets_api.write_to_sheet(pl_excel_data, self._pornolab_tab, "B2", self._gsheet_id)

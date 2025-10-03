@@ -29,7 +29,9 @@ async def fetch_csv_for_import(last_video_code: str = "", limit: int = 0):
         last_video_id = video.id
         if not last_video_id:
             raise AttributeError(f"Video {last_video_code} doesn't have Mongo ID!")
-        mongo_query_coro = Video.find_many(Video.id <= last_video_id, Video.javguru_status == "downloaded", fetch_links=True)
+        mongo_query_coro = Video.find_many(
+            Video.id <= last_video_id, Video.javguru_status == "downloaded", fetch_links=True
+        )
     elif limit:
         mongo_query_coro = Video.find_many(Video.javguru_status == "downloaded", fetch_links=True).limit(limit)
     videos = await mongo_query_coro.to_list()
