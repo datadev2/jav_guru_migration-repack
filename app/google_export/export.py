@@ -96,7 +96,7 @@ class GSheetService:
             logger.error("[!] ERROR! Failed to get latest exported video ID due to IndexError!")
             return "", 0
 
-    async def _fetch_pornolab_data_and_save_in_mongo(self, read_range: str = "B2:M") -> None:
+    async def _fetch_pornolab_data_and_save_in_mongo(self, read_range: str = "B2:N") -> None:
         pl_excel_data = self._gsheets_api.read_sheet(self._pornolab_tab, read_range, self._gsheet_id)
         for row in pl_excel_data:
             try:
@@ -104,18 +104,26 @@ class GSheetService:
                     continue
             except IndexError:
                 continue
-            while len(row) < 12:
+            while len(row) < 13:
                 row.append("")
             jav_code = row[0]
             s3_path = row[8]
             resolution = row[9]
+            runtime = row[10]
+            file_hash = row[11]
             video = await Video.find_one(Video.jav_code == jav_code)
             if not video:
                 continue
             exists = "pornolab" in [source.origin for source in video.sources]
             if exists:
                 continue
-            video.sources.append(VideoSource(origin="pornolab", resolution=resolution, s3_path=s3_path))
+            video.sources.append(VideoSource(
+                origin="pornolab",
+                resolution=resolution,
+                s3_path=s3_path,
+                hash_md5=file_hash,
+            ))
+            video.runtime_minutes=runtime
             await video.save()
             row[-1] = "✓"
         self._gsheets_api.write_to_sheet(pl_excel_data, self._pornolab_tab, "B2", self._gsheet_id)
