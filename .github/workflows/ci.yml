@@ -11,14 +11,14 @@ jobs:
 
     services:
       mongo:
-        image: mongo:6.0
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd="mongosh --eval 'db.adminCommand(\"ping\")'"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+          image: mongo:6.0
+          ports:
+            - 27017:27017
+          options: >-
+            --health-cmd="mongo --eval 'db.runCommand({ping: 1})'"
+            --health-interval=5s
+            --health-timeout=3s
+            --health-retries=10
 
     steps:
       - uses: actions/checkout@v4
@@ -45,11 +45,16 @@ jobs:
         run: |
           poetry lock
           poetry install --no-root
+      
+      - name: Debug MongoDB container
+        run: |
+          docker ps -a
+          docker logs $(docker ps -a -q --filter "ancestor=mongo:6.0")
 
       - name: Wait for Mongo
         run: |
-          for i in {1..30}; do
-            if mongosh --host 127.0.0.1 --eval 'db.adminCommand("ping")' > /dev/null 2>&1; then
+          for i in {1..60}; do
+            if mongosh --host mongo --eval 'db.adminCommand("ping")' > /dev/null 2>&1; then
               echo "MongoDB is ready!"
               exit 0
             fi
