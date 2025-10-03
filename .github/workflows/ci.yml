@@ -37,7 +37,9 @@ jobs:
           key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
 
       - name: Install dependencies
-        run: poetry install --no-root --no-interaction
+        run: |
+          poetry lock
+          poetry install --no-root
       
       - name: Debug MongoDB container
         run: |
