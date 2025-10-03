@@ -78,6 +78,11 @@ jobs:
           docker ps -a
           docker logs $(docker ps -a -q --filter "ancestor=mongo:6.0")
 
+      - name: Debug Pydantic/Beanie versions
+        run: |
+          poetry run python -c "import pydantic; import beanie; print('Pydantic:', pydantic.__version__); print('Beanie:', beanie.__version__)"
+          poetry show pydantic-core
+
       - name: Run tests
         run: |
           set -a
