@@ -11,9 +11,9 @@ jobs:
 
     services:
       mongo:
-          image: mongo:6.0
-          ports:
-            - 27017:27017
+        image: mongo:6.0
+        ports:
+          - 27017:27017
 
     steps:
       - uses: actions/checkout@v4
@@ -45,22 +45,6 @@ jobs:
         run: |
           docker ps -a
           docker logs $(docker ps -a -q --filter "ancestor=mongo:6.0")
-      
-      - name: Install mongosh
-        run: sudo apt-get update && sudo apt-get install -y mongodb-mongosh
-
-      - name: Wait for Mongo
-        run: |
-          for i in {1..60}; do
-            if mongosh "mongodb://localhost:27017/javguru_test" --eval 'db.adminCommand("ping")' > /dev/null 2>&1; then
-              echo "MongoDB is ready!"
-              exit 0
-            fi
-            echo "Waiting for MongoDB..."
-            sleep 2
-          done
-          echo "MongoDB did not start in time" >&2
-          exit 1
 
       - name: Run tests
         run: |
