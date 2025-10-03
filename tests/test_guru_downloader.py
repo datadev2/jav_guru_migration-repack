@@ -103,6 +103,7 @@ async def test_download_one_full_video(monkeypatch, init_db):
         title="Full Test Video",
         jav_code="TST-003",
         page_link="https://x/full",
+        javguru_status="added",
         site="guru",
         thumbnail_url="https://x/thumb.jpg",
         actresses=[],
@@ -126,8 +127,8 @@ async def test_download_one_full_video(monkeypatch, init_db):
     )
     await video.insert()
 
-    d = GuruDownloader(DummySelenium(), DummyParser())
-    ok = await d.download_one(video)
+    downloader = GuruDownloader(DummySelenium(), DummyParser())
+    ok = await downloader(video)
     assert ok
 
     saved = await Video.get(video.id)
@@ -182,11 +183,16 @@ async def test_download_one_sets_runtime(monkeypatch, init_db):
     monkeypatch.setattr("app.download.service.GuruDownloader._detect_resolution", lambda *_: "720p")
     monkeypatch.setattr("app.download.service.GuruDownloader._detect_runtime", lambda *_: 99)
 
-    video = Video(title="TestVid", jav_code="TST-002", page_link="https://x")
+    video = Video(
+        title="TestVid",
+        jav_code="TST-002",
+        page_link="https://x",
+        javguru_status="added",
+    )
     await video.insert()
 
-    d = GuruDownloader(DummySelenium(), DummyParser())
-    ok = await d.download_one(video)
+    downloader = GuruDownloader(DummySelenium(), DummyParser())
+    ok = await downloader(video)
     assert ok
 
     saved = await Video.get(video.id)
@@ -218,11 +224,16 @@ async def test_download_one_inserts_source(monkeypatch, init_db):
     monkeypatch.setattr("app.download.service.s3.put_object", fake_put)
     monkeypatch.setattr("app.download.service.GuruDownloader._detect_resolution", lambda *_: "720p")
 
-    video = Video(title="TestVid", jav_code="TST-001", page_link="https://x")
+    video = Video(
+        title="TestVid",
+        jav_code="TST-001",
+        page_link="https://x",
+        javguru_status="added",
+    )
     await video.insert()
 
-    d = GuruDownloader(DummySelenium(), DummyParser())
-    ok = await d.download_one(video)
+    downloader = GuruDownloader(DummySelenium(), DummyParser())
+    ok = await downloader(video)
     assert ok
 
     import asyncio
@@ -247,6 +258,7 @@ async def test_append_second_source(monkeypatch, init_db):
         title="TestVid",
         jav_code="TST-001",
         page_link="https://x/",
+        javguru_status="added",
         sources=[
             VideoSource(
                 origin="pornolab",
@@ -279,8 +291,8 @@ async def test_append_second_source(monkeypatch, init_db):
     monkeypatch.setattr("app.download.service.s3.put_object", fake_put)
     monkeypatch.setattr("app.download.service.GuruDownloader._detect_resolution", lambda *_: "1080p")
 
-    d = GuruDownloader(DummySelenium(), DummyParser())
-    ok = await d.download_one(video)
+    downloader = GuruDownloader(DummySelenium(), DummyParser())
+    ok = await downloader(video)
     assert ok
 
     saved = await Video.get(video.id)

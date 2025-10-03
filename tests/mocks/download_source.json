@@ -1,0 +1,251 @@
+[
+  {
+    "title": "Test Mock Video 1",
+    "jav_code": "MOCK-001",
+    "page_link": "https://jav.guru/999/mock-001/",
+    "javguru_status": "added",
+    "sources": [
+      {
+        "origin": "guru",
+        "resolution": "480p",
+        "s3_path": "s3://videos/javguru/mock-001-480p.mp4",
+        "file_name": "mock-001-480p.mp4",
+        "file_size": 111,
+        "hash_md5": "hash001a"
+      },
+      {
+        "origin": "alt",
+        "resolution": "1080p",
+        "s3_path": "s3://videos/javguru/mock-001-1080p.mp4",
+        "file_name": "mock-001-1080p.mp4",
+        "file_size": 222,
+        "hash_md5": "hash001b"
+      }
+    ]
+  },
+  {
+    "title": "Test Mock Video 2",
+    "jav_code": "MOCK-002",
+    "page_link": "https://jav.guru/999/mock-002/",
+    "javguru_status": "added",
+    "sources": [
+      {
+        "origin": "guru",
+        "resolution": "720p",
+        "s3_path": "s3://videos/javguru/mock-002-720p.mp4",
+        "file_name": "mock-002-720p.mp4",
+        "file_size": 333,
+        "hash_md5": "hash002a"
+      }
+    ]
+  },
+  {
+    "title": "Test Mock Video 3",
+    "jav_code": "MOCK-003",
+    "page_link": "https://jav.guru/999/mock-003/",
+    "javguru_status": "added",
+    "sources": [
+      {
+        "origin": "guru",
+        "resolution": "1080p",
+        "s3_path": "s3://videos/javguru/mock-003-1080p.mp4",
+        "file_name": "mock-003-1080p.mp4",
+        "file_size": 444,
+        "hash_md5": "hash003a"
+      },
+      {
+        "origin": "alt",
+        "resolution": "4k",
+        "s3_path": "s3://videos/javguru/mock-003-4k.mp4",
+        "file_name": "mock-003-4k.mp4",
+        "file_size": 555,
+        "hash_md5": "hash003b"
+      }
+    ]
+  },
+  {
+    "title": "Test Mock Video 4",
+    "jav_code": "MOCK-004",
+    "page_link": "https://jav.guru/999/mock-004/",
+    "javguru_status": "added",
+    "sources": [
+      {
+        "origin": "guru",
+        "resolution": "480p",
+        "s3_path": "s3://videos/javguru/mock-004-480p.mp4",
+        "file_name": "mock-004-480p.mp4",
+        "file_size": 100,
+        "hash_md5": "hash004a"
+      }
+    ]
+  },
+  {
+    "title": "Test Mock Video 5",
+    "jav_code": "MOCK-005",
+    "page_link": "https://jav.guru/999/mock-005/",
+    "javguru_status": "added",
+    "sources": [
+      {
+        "origin": "guru",
+        "resolution": "1080p",
+        "s3_path": "s3://videos/javguru/mock-005-1080p.mp4",
+        "file_name": "mock-005-1080p.mp4",
+        "file_size": 600,
+        "hash_md5": "hash005a"
+      }
+    ]
+  },
+  {
+    "title": "Test Mock Video 6",
+    "jav_code": "MOCK-006",
+    "page_link": "https://jav.guru/999/mock-006/",
+    "javguru_status": "added",
+    "sources": [
+      {
+        "origin": "alt",
+        "resolution": "720p",
+        "s3_path": "s3://videos/javguru/mock-006-720p.mp4",
+        "file_name": "mock-006-720p.mp4",
+        "file_size": 777,
+        "hash_md5": "hash006a"
+      }
+    ]
+  },
+  {
+    "title": "Test Mock Video 7",
+    "jav_code": "MOCK-007",
+    "page_link": "https://jav.guru/999/mock-007/",
+    "javguru_status": "added",
+    "sources": [
+      {
+        "origin": "guru",
+        "resolution": "480p",
+        "s3_path": "s3://videos/javguru/mock-007-480p.mp4",
+        "file_name": "mock-007-480p.mp4",
+        "file_size": 123,
+        "hash_md5": "hash007a"
+      },
+      {
+        "origin": "alt",
+        "resolution": "1080p",
+        "s3_path": "s3://videos/javguru/mock-007-1080p.mp4",
+        "file_name": "mock-007-1080p.mp4",
+        "file_size": 321,
+        "hash_md5": "hash007b"
+      }
+    ]
+  },
+  {
+    "title": "Test Mock Video 8",
+    "jav_code": "MOCK-008",
+    "page_link": "https://jav.guru/999/mock-008/",
+    "javguru_status": "added",
+    "sources": [
+      {
+        "origin": "guru",
+        "resolution": "1080p",
+        "s3_path": "s3://videos/javguru/mock-008-1080p.mp4",
+        "file_name": "mock-008-1080p.mp4",
+        "file_size": 456,
+        "hash_md5": "hash008a"
+      }
+    ]
+  },
+  {
+    "title": "Test Mock Video 9",
+    "jav_code": "MOCK-009",
+    "page_link": "https://jav.guru/999/mock-009/",
+    "javguru_status": "added",
+    "sources": [
+      {
+        "origin": "alt",
+        "resolution": "720p",
+        "s3_path": "s3://videos/javguru/mock-009-720p.mp4",
+        "file_name": "mock-009-720p.mp4",
+        "file_size": 654,
+        "hash_md5": "hash009a"
+      },
+      {
+        "origin": "guru",
+        "resolution": "1080p",
+        "s3_path": "s3://videos/javguru/mock-009-1080p.mp4",
+        "file_name": "mock-009-1080p.mp4",
+        "file_size": 987,
+        "hash_md5": "hash009b"
+      }
+    ]
+  },
+  {
+    "title": "Test Mock Video 10",
+    "jav_code": "MOCK-010",
+    "page_link": "https://jav.guru/999/mock-010/",
+    "javguru_status": "added",
+    "sources": [
+      {
+        "origin": "guru",
+        "resolution": "480p",
+        "s3_path": "s3://videos/javguru/mock-010-480p.mp4",
+        "file_name": "mock-010-480p.mp4",
+        "file_size": 1111,
+        "hash_md5": "hash010a"
+      },
+      {
+        "origin": "alt",
+        "resolution": "4k",
+        "s3_path": "s3://videos/javguru/mock-010-4k.mp4",
+        "file_name": "mock-010-4k.mp4",
+        "file_size": 2222,
+        "hash_md5": "hash010b"
+      }
+    ]
+  },
+  {
+    "title": "Chunked Mock Video",
+    "jav_code": "MOCK-CHUNKS",
+    "page_link": "https://jav.guru/999/mock-chunks/",
+    "javguru_status": "added",
+    "sources": [
+      {
+        "origin": "guru",
+        "resolution": "720p",
+        "s3_path": "s3://videos/javguru/mock-chunks.mp4",
+        "file_name": "mock-chunks.mp4",
+        "file_size": 9,
+        "hash_md5": "aba369f7d2b28a9098a0a26feb7dc965"
+      }
+    ]
+  },
+  {
+    "title": "Not Found Video",
+    "jav_code": "MOCK-404",
+    "page_link": "https://jav.guru/999/mock-404/",
+    "javguru_status": "added",
+    "sources": [
+      {
+        "origin": "guru",
+        "resolution": "720p",
+        "s3_path": "s3://videos/javguru/mock-404.mp4",
+        "file_name": "mock-404.mp4",
+        "file_size": 0,
+        "hash_md5": null
+      }
+    ]
+  },
+  {
+    "title": "Empty Mock Video",
+    "jav_code": "MOCK-EMPTY",
+    "page_link": "https://jav.guru/999/mock-empty/",
+    "javguru_status": "added",
+    "sources": [
+      {
+        "origin": "guru",
+        "resolution": "720p",
+        "s3_path": "s3://videos/javguru/mock-empty.mp4",
+        "file_name": "mock-empty.mp4",
+        "file_size": 0,
+        "hash_md5": "d41d8cd98f00b204e9800998ecf8427e"
+      }
+    ]
+  }
+
+]
