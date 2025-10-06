@@ -75,6 +75,7 @@ class Video(Document):
     site: str = Field(default="unknown")
 
     thumbnail_url: HttpUrl | None = None
+    thumbnail_s3_url: HttpUrl | None = None
 
     categories: list[Link[Category]] = Field(default_factory=list)
     tags: list[Link[Tag]] = Field(default_factory=list)
@@ -128,6 +129,8 @@ class VideoCSV(BaseModel):
     categories: list
     tags: list
     s3_path: str
+    studio: str
+    poster_url: str
 
     @model_validator(mode="after")
     def validator(self):
