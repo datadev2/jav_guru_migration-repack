@@ -71,10 +71,9 @@ class GSheetService:
             logger.info(f"Updated rewritten titles for {len(updates)} rows")
 
     async def update_s3_paths_and_resolutions(self, read_range: str = "A2:T", write_start_cell: str = "P2"):
-        # TODO: check it! Empty s3 paths are exported with false data!
         await self._fetch_pornolab_data_and_save_in_mongo()
         data_to_export = []
-        mongo_data = await Video.find({"sources.0": {"$exists": True}}).to_list()
+        mongo_data = await Video.find().to_list()
         exported_data = self._gsheets_api.read_sheet(self._gsheet_main_tab, read_range, self._gsheet_id)
         exported_dict = {row[0]: row for row in exported_data}
         combined_data = [(video, exported_dict.get(str(video.id), [])) for video in mongo_data]
