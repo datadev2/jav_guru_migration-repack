@@ -25,6 +25,7 @@ class CSVDump:
                 "tags": [tag.name for tag in video.tags],
                 "s3_path": video.s3_path,
                 "studio": video.studio,
+                "poster_url": video.thumbnail_s3_url.unicode_string(),
             }
             validated_data.append(self._schema(**raw).model_dump(mode="json"))
         return self._make_csv_string(validated_data)
