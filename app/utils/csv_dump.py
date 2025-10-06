@@ -15,16 +15,19 @@ class CSVDump:
     def __call__(self, videos: list[Video]) -> str:
         validated_data = []
         for video in videos:
+            jav_source = next((source for source in video.sources if source.origin == "guru"), "")
+            pornolab_source = next((source for source in video.sources if source.origin == "pornolab"), "")
+            jav_hash_md5 = jav_source.hash_md5 if jav_source else ""
+            pornolab_hash_md5 = pornolab_source.hash_md5 if pornolab_source else ""
             raw = {
                 "jav_code": video.jav_code,
                 "title": video.title,
                 "release_date": video.release_date,
-                "file_hash": video.file_hash_md5,
+                "file_hash": pornolab_hash_md5 if pornolab_hash_md5 != "" else jav_hash_md5,
                 "models": [actress.name for actress in video.actresses],
                 "categories": [cat.name for cat in video.categories],
                 "tags": [tag.name for tag in video.tags],
-                "s3_path": video.s3_path,
-                "studio": video.studio,
+                "s3_path": pornolab_source.s3_path if pornolab_source != "" else jav_source.s3_path,
                 "poster_url": video.thumbnail_s3_url.unicode_string(),
             }
             validated_data.append(self._schema(**raw).model_dump(mode="json"))

@@ -129,7 +129,6 @@ class VideoCSV(BaseModel):
     categories: list
     tags: list
     s3_path: str
-    studio: str
     poster_url: str
 
     @model_validator(mode="after")
