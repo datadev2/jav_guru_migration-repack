@@ -29,6 +29,7 @@ class CSVDump:
                 "tags": [tag.name for tag in video.tags],
                 "s3_path": pornolab_source.s3_path if pornolab_source != "" else jav_source.s3_path,
                 "poster_url": video.thumbnail_s3_url.unicode_string(),
+                "studio": video.studio.name,
             }
             validated_data.append(self._schema(**raw).model_dump(mode="json"))
         return self._make_csv_string(validated_data)

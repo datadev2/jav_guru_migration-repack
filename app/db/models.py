@@ -130,6 +130,7 @@ class VideoCSV(BaseModel):
     tags: list
     s3_path: str
     poster_url: str
+    studio: str
 
     @model_validator(mode="after")
     def validator(self):
