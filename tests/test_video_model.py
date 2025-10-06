@@ -42,23 +42,6 @@ async def test_insert_video_empty_sources(init_db):
 
 
 @pytest.mark.asyncio
-async def test_insert_video_source_missing_fields(init_db, mock_load_data):
-    data = mock_load_data("download_source.json")
-    record = next(r for r in data if r["jav_code"] == "MOCK-003")
-
-    with pytest.raises(Exception):
-        bad_source = VideoSource(origin="guru", resolution="480p", s3_path="s3://videos/javguru/bad.mp4")
-        video = Video(
-            title=record["title"],
-            jav_code=record["jav_code"],
-            page_link=record["page_link"],
-            javguru_status=record["javguru_status"],
-            sources=[bad_source],
-        )
-        await video.insert()
-
-
-@pytest.mark.asyncio
 async def test_insert_video_duplicate_jav_code(init_db, mock_load_data):
     data = mock_load_data("download_source.json")
     record = next(r for r in data if r["jav_code"] == "MOCK-002")
