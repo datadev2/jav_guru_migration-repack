@@ -106,16 +106,16 @@ class GSheetService:
             while len(row) < 13:
                 row.append("")
             jav_code = row[0]
-            s3_path = row[8]
-            resolution = row[9]
-            runtime = row[10]
-            file_hash = row[11]
             video = await Video.find_one(Video.jav_code == jav_code)
             if not video:
                 continue
             exists = "pornolab" in [source.origin for source in video.sources]
             if exists:
                 continue
+            s3_path = row[8]
+            resolution = row[9]
+            runtime = row[10]
+            file_hash = row[11]
             video.sources.append(
                 VideoSource(
                     origin="pornolab",
