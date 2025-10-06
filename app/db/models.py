@@ -61,9 +61,9 @@ class VideoSource(BaseModel):
     origin: str
     resolution: str
     s3_path: str
-    file_name: str
-    file_size: int
-    hash_md5: str
+    file_name: str = ""
+    file_size: int = 0
+    hash_md5: str = ""
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -75,6 +75,7 @@ class Video(Document):
     site: str = Field(default="unknown")
 
     thumbnail_url: HttpUrl | None = None
+    thumbnail_s3_url: HttpUrl | None = None
 
     categories: list[Link[Category]] = Field(default_factory=list)
     tags: list[Link[Tag]] = Field(default_factory=list)
@@ -129,6 +130,7 @@ class VideoCSV(BaseModel):
     tags: list
     s3_path: str
     studio: str
+    poster_url: str
 
     @model_validator(mode="after")
     def validator(self):

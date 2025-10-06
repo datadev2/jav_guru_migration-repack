@@ -15,7 +15,8 @@ class Config(BaseSettings):
     S3_ACCESS_KEY: SecretStr
     S3_SECRET_KEY: SecretStr
     S3_BUCKET: str
-    S3_FOLDER: str
+    S3_JAVGURU_FOLDER: str
+    S3_THUMBNAILS_FOLDER: str
 
     REDIS_DSN: RedisDsn
 
@@ -27,7 +28,8 @@ class Config(BaseSettings):
     SITE_NAME: str
 
     G_SPREADSHEET_ID: str
-    G_SPREADSHEET_TAB: str = "Main"
+    G_SPREADSHEET_MAIN_TAB: str = "Main"
+    G_SPREADSHEET_PORNOLAB_TAB: str = "Pornolab Data"
     G_SPREADSHEET_TAB_PROMPT: str = "Grok Prompt Test"
     G_SPREADSHEET_CREDS: str
 
