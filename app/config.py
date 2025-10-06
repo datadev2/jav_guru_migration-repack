@@ -15,7 +15,8 @@ class Config(BaseSettings):
     S3_ACCESS_KEY: SecretStr
     S3_SECRET_KEY: SecretStr
     S3_BUCKET: str
-    S3_FOLDER: str
+    S3_JAVGURU_FOLDER: str
+    S3_THUMBNAILS_FOLDER: str
 
     REDIS_DSN: RedisDsn
 
