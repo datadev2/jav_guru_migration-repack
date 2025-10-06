@@ -45,7 +45,7 @@ class GuruDownloader:
             md5 = hashlib.md5(buf.getbuffer()).hexdigest()
 
             s3_filename = f"{video.jav_code}_{md5}.mp4"
-            s3_key = f"{config.S3_FOLDER}/{s3_filename}".lstrip("/")
+            s3_key = f"{config.S3_JAVGURU_FOLDER}/{s3_filename}".lstrip("/")
             buf.seek(0)
             await s3.put_object(buf, s3_key)
 
