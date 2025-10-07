@@ -22,7 +22,10 @@ app = FastAPI(title="JavGuru Parser/Downloader", version="1.0.0", lifespan=lifes
 
 @app.post("/csv")
 async def fetch_csv_for_import(last_video_code: str = "", limit: int = 0):
-    if last_video_code:
+    mongo_query_coro = Video.find_many(Video.javguru_status == "downloaded", fetch_links=True)
+    if limit:
+        mongo_query_coro = mongo_query_coro.limit(limit)
+    elif last_video_code:
         video = await Video.find_one(Video.jav_code == last_video_code)
         if not video:
             raise ValueError(f"Video not found by {last_video_code}!")
@@ -32,9 +35,6 @@ async def fetch_csv_for_import(last_video_code: str = "", limit: int = 0):
         mongo_query_coro = Video.find_many(
             Video.id <= last_video_id, Video.javguru_status == "downloaded", fetch_links=True
         )
-    elif limit:
-        mongo_query_coro = Video.find_many(Video.javguru_status == "downloaded", fetch_links=True).limit(limit)
     videos = await mongo_query_coro.to_list()
-    csv_data = csv_dump(videos)
-    video_ids = [str(v.id) for v in videos]
-    return Response(content=csv_data, media_type="text/plain", headers={"X-Video-IDs": json.dumps(video_ids)})
+    csv_data, ids = csv_dump(videos)
+    return Response(content=csv_data, media_type="text/plain", headers={"X-Video-IDs": json.dumps(ids)})
