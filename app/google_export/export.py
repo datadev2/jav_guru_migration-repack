@@ -125,6 +125,7 @@ class GSheetService:
                 )
             )
             video.runtime_minutes = runtime
+            video.javguru_status = "downloaded"
             await video.save()
             row[-1] = "✓"
         self._gsheets_api.write_to_sheet(pl_excel_data, self._pornolab_tab, "B2", self._gsheet_id)
