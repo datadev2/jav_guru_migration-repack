@@ -4,7 +4,7 @@ from typing import Type
 
 from pydantic import BaseModel
 
-from app.db.models import Video, VideoCSV
+from app.db.models import Video, VideoCSV, VideoSource
 
 
 class CSVDump:
@@ -12,27 +12,37 @@ class CSVDump:
         self._schema = schema
         self._delimiter = delimiter
 
-    def __call__(self, videos: list[Video]) -> str:
+    def __call__(self, videos: list[Video]) -> tuple[str, list]:
         validated_data = []
+        ids = []
         for video in videos:
-            jav_source = next((source for source in video.sources if source.origin == "guru"), "")
-            pornolab_source = next((source for source in video.sources if source.origin == "pornolab"), "")
-            jav_hash_md5 = jav_source.hash_md5 if jav_source else ""
-            pornolab_hash_md5 = pornolab_source.hash_md5 if pornolab_source else ""
+            best_hd_source = self._fetch_best_source(video.sources)
+            if not best_hd_source:
+                continue
             raw = {
                 "jav_code": video.jav_code,
-                "title": video.title,
+                "title": video.rewritten_title,
                 "release_date": video.release_date,
-                "file_hash": pornolab_hash_md5 if pornolab_hash_md5 != "" else jav_hash_md5,
+                "file_hash": best_hd_source.hash_md5,
                 "models": [actress.name for actress in video.actresses],
                 "categories": [cat.name for cat in video.categories],
                 "tags": [tag.name for tag in video.tags],
-                "s3_path": pornolab_source.s3_path if pornolab_source != "" else jav_source.s3_path,
+                "s3_path": best_hd_source.s3_path,
                 "poster_url": video.thumbnail_s3_url.unicode_string(),
                 "studio": video.studio.name,
             }
             validated_data.append(self._schema(**raw).model_dump(mode="json"))
-        return self._make_csv_string(validated_data)
+            ids.append(str(video.id))
+        csv_string = self._make_csv_string(validated_data)
+        return csv_string, ids
+
+    @staticmethod
+    def _fetch_best_source(sources: list[VideoSource], res = ["4k", "2k", "1080p", "720p"]) -> VideoSource | None:
+        res_normalized = [r.lower() for r in res]
+        valid = [s for s in sources if s.resolution.lower() in res_normalized]
+        if not valid:
+            return None
+        return min(valid, key=lambda s: res_normalized.index(s.resolution.lower()))
 
     def _make_csv_string(self, data: list[dict]):
         output = StringIO()
