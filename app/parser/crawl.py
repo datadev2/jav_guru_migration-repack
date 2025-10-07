@@ -71,18 +71,10 @@ async def pipeline_titles():
         logger.info(f"[Title] {video.jav_code}: {new_title}")
 
 
-async def pipeline_thumbnails():
-    await init_mongo()
-    saver = ThumbnailSaver()
-    await saver()
-    logger.info("Process finished")
-
-
 async def main():
     # await pipeline_init(start_page=4455, end_page=4450, headless=True)
     # await pipeline_enrich(headless=True)
-    # await pipeline_titles()
-    await pipeline_thumbnails()
+    await pipeline_titles()
 
 
 if __name__ == "__main__":

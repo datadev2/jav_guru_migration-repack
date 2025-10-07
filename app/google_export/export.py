@@ -148,8 +148,10 @@ class PromptService:
     def get_prompt(self, cell: str = "B1") -> str:
         values = self._gsheets_api.read_sheet(self._tab_name, cell, self._sheet_id)
         if values and values[0] and values[0][0]:
-            logger.info(str(values[0][0]))
-            return str(values[0][0])
+            prompt = str(values[0][0])
+            logger.info(f"[GoogleExport] prompt: {prompt[:50]}...")
+            return prompt
+        logger.warning("[GoogleExport] empty prompt, using default")
         return config.PROMPT_DEFAULT
 
 
