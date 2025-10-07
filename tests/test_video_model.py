@@ -40,6 +40,7 @@ async def test_insert_video_empty_sources(init_db):
     assert saved is not None
     assert saved.sources == []
 
+
 @pytest.mark.asyncio
 async def test_insert_video_duplicate_jav_code(init_db, mock_load_data):
     data = mock_load_data("download_source.json")
