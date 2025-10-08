@@ -1,7 +1,29 @@
 # tests/test_video_models.py
 import pytest
 
-from app.db.models import Video, VideoSource
+from app.db.models import Video, VideoSource, ParsedVideo
+from app.parser.service import Parser
+
+
+class MockAdapter:
+    site_name = "guru"
+
+    def parse_videos(self, selenium, start_page=None, end_page=None):
+        return [
+            ParsedVideo(title="video_1", jav_code="TEST-1", page_link="https://test/1", site="guru"),
+            ParsedVideo(title="video_2", jav_code="TEST-2", page_link="https://test/2", site="guru"),
+            ParsedVideo(title="video_3", jav_code="TEST-1", page_link="https://test/1", site="guru"),
+        ]
+
+@pytest.mark.asyncio
+async def test_get_videos_inserts_only_unique(init_db):
+    parser = Parser(adapter=MockAdapter(), headless=True)
+    await parser.get_videos(start_page=1, end_page=1)
+
+    videos = await Video.find_all().to_list()
+    assert len(videos) == 2
+    links = {str(v.page_link) for v in videos}
+    assert "https://test/1" in links and "https://test/2" in links
 
 
 @pytest.mark.asyncio

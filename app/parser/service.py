@@ -113,17 +113,19 @@ class Parser(SeleniumDriver):
             logger.info("[Parser] No new videos to insert.")
             return
 
-        await Video.insert_many([
-            Video(
-                title=v.title,
-                jav_code=v.jav_code,
-                page_link=str(v.page_link),
-                site=v.site,
-                thumbnail_url=v.thumbnail_url,
-                javguru_status="added",
-            )
-            for v in unique_videos
-        ])
+        await Video.insert_many(
+            [
+                Video(
+                    title=v.title,
+                    jav_code=v.jav_code,
+                    page_link=str(v.page_link),
+                    site=v.site,
+                    thumbnail_url=v.thumbnail_url,
+                    javguru_status="added",
+                )
+                for v in unique_videos
+            ]
+        )
         logger.info(f"[Parser] Inserted {len(unique_videos)} new Videos")
 
         return len(unique_videos)
@@ -187,7 +189,9 @@ class Parser(SeleniumDriver):
                 existing = await Video.find_one(Video.jav_code == video.jav_code, Video.id != video.id)
 
             if existing:
-                logger.warning(f"[Parser] Duplicate jav_code detected: {video.jav_code}. Deleting current placeholder {video.id}")
+                logger.warning(
+                    f"[Parser] Duplicate jav_code detected: {video.jav_code}. Deleting current placeholder {video.id}"
+                )
                 await video.delete()
                 continue
 
