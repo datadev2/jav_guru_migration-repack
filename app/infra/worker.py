@@ -2,10 +2,14 @@ import asyncio
 import time
 from typing import Literal
 
+from loguru import logger
+
 from app.db.database import init_mongo
 from app.db.models import Video
 from app.download.service import run_download
+from app.google_export.export import GSheetService
 from app.infra.queue import queue
+from app.parser.crawl import pipeline_enrich, pipeline_init, pipeline_thumbnails, pipeline_titles
 
 
 @queue.task(name="download_single_video")
@@ -50,7 +54,85 @@ def download_fresh_videos_from_guru_task(limit: int = 50, headless: bool = True)
     return f"Sent {len(videos_to_download)} videos for download from javguru: {", ".join(video_ids)}"
 
 
+@queue.task(name="parse_jav_guru")
+def parse_jav_guru_task(start_page: int, end_page: int, headless: bool = True) -> None:
+    asyncio.run(pipeline_init(start_page, end_page, headless))
+
+
+@queue.task(name="enrich_videos_with_data")
+def enrich_videos_with_data_task(headless: bool = True) -> None:
+    asyncio.run(pipeline_enrich(headless))
+
+
+@queue.task(name="generate_new_titles")
+def generate_new_titles_task() -> None:
+    asyncio.run(pipeline_titles())
+
+
+@queue.task(name="save_video_thumbnails")
+def save_video_thumbnails_task() -> None:
+    asyncio.run(pipeline_thumbnails())
+
+
+@queue.task(name="export_video_data_to_gsheet")
+def export_video_data_to_gsheet_task(
+    gsheet_read_range: str = "A2:A",
+    latest_exported_video_mongo_id: str | None = None,
+    gsheet_write_start_row: int = 0,
+) -> None:
+    gsheet_svc = GSheetService()
+    asyncio.run(
+        gsheet_svc.update_export_data_to_gsheet(
+            gsheet_read_range,
+            latest_exported_video_mongo_id,
+            gsheet_write_start_row,
+        )
+    )
+
+
+@queue.task(name="update_s3_paths_and_resolutions")
+def update_s3_paths_and_resolutions_task(read_range: str = "A2:T", write_start_cell: str = "P2") -> None:
+    gsheet_svc = GSheetService()
+    asyncio.run(gsheet_svc.update_s3_paths_and_resolutions(read_range, write_start_cell))
+
+
+# Use functions below to send celery tasks manually via app/send_tasks.py
+
+
 def download_fresh_videos_from_guru_task_caller(limit: int = 50, headless: bool = True):
-    """For sending task manually. See app/send_tasks.py."""
-    download_fresh_videos_from_guru_task.delay(limit, headless)
-    print(f"Sent the task to download {limit} videos from javguru.")
+    download_fresh_videos_from_guru_task.delay(**locals())
+    logger.info(f"Sent task to download {limit} videos from jav.guru")
+
+
+def parse_jav_guru_task_caller(start_page: int, end_page: int, headless: bool = True):
+    parse_jav_guru_task.delay(**locals())
+    logger.info("Sent task to parse jav.guru")
+
+
+def enrich_videos_with_data_task_caller(headless: bool = True):
+    enrich_videos_with_data_task.delay(**locals())
+    logger.info("Sent task to enrich jav.guru")
+
+
+def generate_new_titles_task_caller():
+    generate_new_titles_task.delay()
+    logger.info("Sent task to generate new titles.")
+
+
+def save_video_thumbnails_task_caller():
+    save_video_thumbnails_task.delay()
+    logger.info("Sent task to save video thumbnails")
+
+
+def export_video_data_to_gsheet_task_caller(
+    gsheet_read_range: str = "A2:A",
+    latest_exported_video_mongo_id: str | None = None,
+    gsheet_write_start_row: int = 0,
+):
+    export_video_data_to_gsheet_task.delay(**locals())
+    logger.info("Sent task to export video data to gsheet")
+
+
+def update_s3_paths_and_resolutions_task_caller(read_range: str = "A2:T", write_start_cell: str = "P2"):
+    update_s3_paths_and_resolutions_task.delay(**locals())
+    logger.info("Sent task to update S3 paths and resolutions in gsheet")
