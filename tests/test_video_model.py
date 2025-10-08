@@ -18,9 +18,8 @@ class MockAdapter:
 
 @pytest.mark.asyncio
 async def test_get_videos_inserts_only_unique(init_db):
-    parser = Parser(adapter=MockAdapter(), headless=True)
-    parser.driver = MagicMock()
-    parser.selenium = MagicMock() 
+    parser = Parser(adapter=MockAdapter(), skip_driver=True)
+    parser.selenium = MagicMock()
     await parser.get_videos(start_page=1, end_page=1)
 
     videos = await Video.find_all().to_list()

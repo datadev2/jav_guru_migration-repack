@@ -11,10 +11,10 @@ from app.parser.interactions import SeleniumService
 
 
 class Parser(SeleniumDriver):
-    def __init__(self, adapter: ParserAdapter, headless: bool = True):
-        super().__init__(headless=headless)
-        self.selenium = SeleniumService(self.driver)
+    def __init__(self, adapter: ParserAdapter, headless: bool = True, skip_driver: bool = False):
+        super().__init__(headless=headless, skip_driver=skip_driver)
         self.adapter = adapter
+        self.selenium = SeleniumService(self.driver) if not skip_driver else None
 
     def __enter__(self):
         return self

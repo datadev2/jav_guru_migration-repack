@@ -11,7 +11,12 @@ class SeleniumDriver:
         driver_path: str | None = config.DRIVER or None,
         adblock_path: str = config.AD_BLOCK,
         headless: bool = True,
+        skip_driver: bool = False,
     ):
+        if skip_driver:
+            self.driver = None
+            return
+
         options = uc.ChromeOptions()
 
         if adblock_path:
@@ -59,4 +64,5 @@ class SeleniumDriver:
         return self.driver
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.driver.quit()
+        if self.driver:
+            self.driver.quit()
