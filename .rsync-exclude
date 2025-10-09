@@ -1,5 +1,6 @@
 .rsync-exclude
 .env
+.env.template
 .git/
 .gitignore
 .ruff_cache/
@@ -14,4 +15,5 @@ downloader.log
 .vscode/
 .pytest_cache/
 logs/
-docker-compose-dev.yml
+.github/
+tests/

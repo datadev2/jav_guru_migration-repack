@@ -1,0 +1,24 @@
+services:
+  
+  celery:
+    build:
+      context: .
+    container_name: jav-guru-main-service-celery
+    env_file:
+      - .env
+    volumes:
+      - /usr/bin/chromedriver140:/usr/bin/chromedriver
+      - /usr/bin/adblock.crx:/usr/bin/adblock.crx
+    networks:
+      - jav-guru-main
+    command: "celery -A app.infra.queue worker --loglevel=INFO --pool=prefork --concurrency=1"
+
+  beat:
+    build:
+      context: .
+    container_name: jav-guru-main-service-beat
+    env_file:
+      - .env
+    networks:
+      - jav-guru-main
+    command: "celery -A app.infra.queue beat --loglevel=INFO"
