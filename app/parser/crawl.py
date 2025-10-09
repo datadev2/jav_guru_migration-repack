@@ -1,4 +1,5 @@
 import asyncio
+from typing import Literal
 
 from loguru import logger
 
@@ -47,7 +48,10 @@ async def pipeline_init(start_page: int, end_page: int, headless: bool = False):
         logger.error("Pipeline failed: {}", e, exc_info=True)
 
 
-async def pipeline_enrich(headless: bool = False):
+async def pipeline_enrich(site_name: Literal["javct", "javtiful"], headless: bool = False):
+    if site_name not in ("javct", "javtiful"):
+        raise ValueError("Site name arg must be either javct or javtiful!")
+    adapter = SITE_TO_ADAPTER[site_name]()
     await init_mongo()
     try:
         with Parser(adapter=adapter, headless=headless) as parser:

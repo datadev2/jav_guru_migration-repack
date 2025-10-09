@@ -47,7 +47,9 @@ class ThumbnailSaver:
     ) -> None:
         async with semaphore:
             async with http_client.stream("GET", url) as response:
-                response.raise_for_status()
+                if response.status_code != 200:
+                    logger.warning(f"Failed to download thumbnail, response status: {response.status_code}, URL: {url}")
+                    return
                 file_bytes = io.BytesIO()
                 async for chunk in response.aiter_bytes(chunk_size=8192):
                     file_bytes.write(chunk)

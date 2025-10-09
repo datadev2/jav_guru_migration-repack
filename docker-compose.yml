@@ -11,7 +11,7 @@ services:
       - /usr/bin/adblock.crx:/usr/bin/adblock.crx
     networks:
       - jav-guru-main
-    command: "celery -A app.infra.queue worker --loglevel=INFO --pool=prefork --concurrency=1"
+    command: "celery -A app.infra.queue worker --loglevel=INFO --pool=prefork --concurrency=4"
 
   beat:
     build:
@@ -22,3 +22,6 @@ services:
     networks:
       - jav-guru-main
     command: "celery -A app.infra.queue beat --loglevel=INFO"
+
+networks:
+  jav-guru-main:

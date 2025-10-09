@@ -19,6 +19,7 @@ class GSheetService:
         latest_exported_video_mongo_id: str | None = None,
         gsheet_write_start_row: int = 0,
     ):
+        await init_mongo()
         data_to_export = []
         mongo_videos_ = await Video.find_all(fetch_links=True).to_list()
         if not (latest_exported_video_mongo_id and gsheet_write_start_row):
@@ -73,6 +74,7 @@ class GSheetService:
             logger.info(f"Updated rewritten titles for {len(updates)} rows")
 
     async def update_s3_paths_and_resolutions(self, read_range: str = "A2:T", write_start_cell: str = "P2"):
+        await init_mongo()
         await self._fetch_pornolab_data_and_save_in_mongo()
         data_to_export = []
         mongo_data = await Video.find().to_list()
@@ -113,7 +115,7 @@ class GSheetService:
             while len(row) < 13:
                 row.append("")
             jav_code = row[0]
-            video = await Video.find_one(Video.jav_code == jav_code)
+            video = await Video.find_one({"jav_code": jav_code})
             if not video:
                 continue
             exists = "pornolab" in [source.origin for source in video.sources]

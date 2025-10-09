@@ -1,5 +1,5 @@
 from loguru import logger
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 
 from app.db.models import Category, Tag, Video
@@ -34,10 +34,14 @@ class JavctAdapter:
 
     def enrich_video(
         self, selenium: SeleniumService, video: Video, all_categories: list[Category], all_tags: list[Tag]
-    ) -> Video:
-        video.javct_enriched = True  # Make this flag True anyway.
+    ) -> Video | None:
         search_url = f"{self.BASE_URL}/v/{video.jav_code.lower()}"
-        selenium.get(search_url)
+        try:
+            selenium.get(search_url)
+        except TimeoutException:
+            logger.info(f"[!] Search on Javct failed: timeout for video {video.jav_code}")
+            return None
+        video.javct_enriched = True  # Make this flag True anyway.
         categories_found = []
         categories_list_el = selenium.find_first(
             "/html/body/section[2]/div[2]/div/div[1]/div/div[1]/div/div/div/div[2]/div/ul/li[5]"
@@ -52,7 +56,7 @@ class JavctAdapter:
                 if not cat_name:
                     continue
                 categories_found.append(cat_name.strip())
-        except NoSuchElementException:
+        except (NoSuchElementException, AttributeError):
             logger.info(f"[!] Search on Javct failed: video {video.jav_code} not found or page elements not found")
             return video
         for cat in categories_found:
