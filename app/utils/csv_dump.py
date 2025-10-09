@@ -37,7 +37,7 @@ class CSVDump:
         return csv_string, ids
 
     @staticmethod
-    def _fetch_best_source(sources: list[VideoSource], res = ["4k", "2k", "1080p", "720p"]) -> VideoSource | None:
+    def _fetch_best_source(sources: list[VideoSource], res=["4k", "2k", "1080p", "720p"]) -> VideoSource | None:
         res_normalized = [r.lower() for r in res]
         valid = [s for s in sources if s.resolution.lower() in res_normalized]
         if not valid:

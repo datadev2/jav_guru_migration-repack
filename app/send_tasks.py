@@ -1,4 +1,4 @@
-# noqa
+# ruff: noqa
 
 from app.infra.worker import (download_fresh_videos_from_guru_task_caller, enrich_videos_with_data_task_caller,
                               export_video_data_to_gsheet_task_caller, generate_new_titles_task_caller,
