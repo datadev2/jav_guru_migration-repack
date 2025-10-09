@@ -60,8 +60,8 @@ def parse_jav_guru_task(start_page: int, end_page: int, headless: bool = True) -
 
 
 @queue.task(name="enrich_videos_with_data")
-def enrich_videos_with_data_task(headless: bool = True) -> None:
-    asyncio.run(pipeline_enrich(headless))
+def enrich_videos_with_data_task(site_name: str, headless: bool = True) -> None:
+    asyncio.run(pipeline_enrich(site_name, headless))
 
 
 @queue.task(name="generate_new_titles")
@@ -109,7 +109,7 @@ def parse_jav_guru_task_caller(start_page: int, end_page: int, headless: bool = 
     logger.info("Sent task to parse jav.guru")
 
 
-def enrich_videos_with_data_task_caller(headless: bool = True):
+def enrich_videos_with_data_task_caller(site_name: str, headless: bool = True):
     enrich_videos_with_data_task.delay(**locals())
     logger.info("Sent task to enrich jav.guru")
 
