@@ -13,6 +13,7 @@ class SeleniumService:
     def __init__(self, driver: WebDriver, timeout: int = 10):
         self.driver = driver
         self._wait = WebDriverWait(driver, timeout)
+        self.driver.set_page_load_timeout(timeout)
 
     def get(self, url: str, wait_selector: Optional[Tuple[By, str]] = None, timeout: Optional[int] = None):
         try:

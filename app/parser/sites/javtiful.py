@@ -1,5 +1,5 @@
 from loguru import logger
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 
 from app.db.models import Category, Tag, Video
@@ -35,11 +35,15 @@ class JavtifulAdapter:
         video: Video,
         all_categories: list[Category],
         all_tags: list[Tag],
-    ) -> Video:
-        video.javtiful_enriched = True  # Make this flag True anyway.
+    ) -> Video | None:
         # Look up for a video using the jav code provided.
         search_url = f"{self.BASE_URL}/search/videos?search_query={video.jav_code.lower()}"
-        selenium.get(search_url)
+        try:
+            selenium.get(search_url)
+        except TimeoutException:
+            logger.info(f"[!] Search on Javtiful failed: timeout for video {video.jav_code}")
+            return None
+        video.javtiful_enriched = True  # Make this flag True anyway.
         found_video_card = selenium.find_first("/html/body/main/div[3]/div[2]/section/div[2]")
         if not found_video_card:
             logger.info(f"[!] Search on Javtiful failed: video {video.jav_code} not found")
@@ -61,7 +65,7 @@ class JavtifulAdapter:
                 "/html/body/main/div[3]/div[2]/div/section[1]/div[5]/div[2]/div[5]/div[2]"
             )
             video_type_found = video_type_el.find_element(By.TAG_NAME, "a").text
-        except NoSuchElementException:
+        except (NoSuchElementException, AttributeError):
             logger.info(f"[!] Search on Javtiful failed: video {video.jav_code} not found")
             return video
         # Enrich with javtiful categories.

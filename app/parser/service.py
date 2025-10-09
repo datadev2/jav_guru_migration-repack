@@ -178,5 +178,6 @@ class Parser(SeleniumDriver):
         for video in videos_to_enrich:
             logger.info(f"Enriching video document {video.jav_code} with data from {site_name}...")
             video_enriched = self.adapter.enrich_video(self.selenium, video, all_categories, all_tags)
-            await video_enriched.save()
-            logger.success(f"Video {video.jav_code} has been processed using {site_name} adapter and saved")
+            if video_enriched:
+                await video_enriched.save()
+                logger.success(f"Video {video.jav_code} has been processed using {site_name} adapter and saved")
