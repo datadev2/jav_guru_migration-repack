@@ -3,7 +3,6 @@ from typing import Literal
 
 from beanie import Document, Link
 from pydantic import BaseModel, Field, HttpUrl, model_validator
-from pymongo import IndexModel
 
 
 class Studio(Document):
@@ -100,7 +99,6 @@ class Video(Document):
 
     class Settings:
         name = "videos"
-        indexes = [IndexModel([("jav_code", 1)], unique=True)]
 
 
 # ---------- Scraper Schemas ----------

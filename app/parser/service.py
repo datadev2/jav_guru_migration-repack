@@ -11,10 +11,10 @@ from app.parser.interactions import SeleniumService
 
 
 class Parser(SeleniumDriver):
-    def __init__(self, adapter: ParserAdapter, headless: bool = True):
-        super().__init__(headless=headless)
-        self.selenium = SeleniumService(self.driver)
+    def __init__(self, adapter: ParserAdapter, headless: bool = True, skip_driver: bool = False):
+        super().__init__(headless=headless, skip_driver=skip_driver)
         self.adapter = adapter
+        self.selenium = SeleniumService(self.driver) if not skip_driver else None
 
     def __enter__(self):
         return self
@@ -96,19 +96,39 @@ class Parser(SeleniumDriver):
 
         logger.info(f"[Parser] Found {len(raw_videos)} raw videos from {self.adapter.site_name}")
 
-        return await self._insert_unique(
-            Video,
-            raw_videos,
-            key_fn=lambda v: v.page_link,
-            build_fn=lambda v: Video(
-                title=v.title,
-                jav_code=v.jav_code,
-                page_link=v.page_link,
-                site=v.site,
-                thumbnail_url=v.thumbnail_url,
-                javguru_status="added",
-            ),
+        existing_docs = await Video.find_all().to_list()
+        existing_links = {str(v.page_link) for v in existing_docs if v.page_link}
+
+        new_links = set()
+        unique_videos = []
+        for v in raw_videos:
+            link = str(v.page_link)
+            if link in existing_links or link in new_links:
+                logger.debug(f"[Parser] Skipping duplicate page_link: {link}")
+                continue
+            new_links.add(link)
+            unique_videos.append(v)
+
+        if not unique_videos:
+            logger.info("[Parser] No new videos to insert.")
+            return
+
+        await Video.insert_many(
+            [
+                Video(
+                    title=v.title,
+                    jav_code=v.jav_code,
+                    page_link=str(v.page_link),
+                    site=v.site,
+                    thumbnail_url=v.thumbnail_url,
+                    javguru_status="added",
+                )
+                for v in unique_videos
+            ]
         )
+        logger.info(f"[Parser] Inserted {len(unique_videos)} new Videos")
+
+        return len(unique_videos)
 
     async def get_videos_data(self, max_videos: int | None = None):
         """
@@ -161,7 +181,20 @@ class Parser(SeleniumDriver):
                 studio = await Studio.find_one(Studio.name == parsed.studio, Studio.site == self.adapter.site_name)
                 if studio:
                     video.studio = studio
+
             video.javguru_status = "parsed"
+
+            existing = None
+            if video.jav_code:
+                existing = await Video.find_one(Video.jav_code == video.jav_code, Video.id != video.id)
+
+            if existing:
+                logger.warning(
+                    f"[Parser] Duplicate jav_code detected: {video.jav_code}. Deleting current placeholder {video.id}"
+                )
+                await video.delete()
+                continue
+
             await video.save()
             logger.info(f"[Parser] Updated {video.jav_code} | {video.title[:50]}...")
 
