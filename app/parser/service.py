@@ -1,3 +1,4 @@
+import asyncio
 from typing import Callable
 
 from beanie import Document
@@ -214,3 +215,4 @@ class Parser(SeleniumDriver):
             if video_enriched:
                 await video_enriched.save()
                 logger.success(f"Video {video.jav_code} has been processed using {site_name} adapter and saved")
+                await asyncio.sleep(10)
