@@ -28,7 +28,7 @@ class CSVDump:
                 "categories": [cat.name for cat in video.categories],
                 "tags": [tag.name for tag in video.tags],
                 "s3_path": best_hd_source.s3_path,
-                "poster_url": video.thumbnail_s3_url.unicode_string(),
+                "poster_for_main_page_url": video.thumbnail_s3_url.unicode_string(),
                 "studio": video.studio.name,
             }
             validated_data.append(self._schema(**raw).model_dump(mode="json"))

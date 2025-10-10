@@ -127,15 +127,17 @@ class VideoCSV(BaseModel):
     categories: list
     tags: list
     s3_path: str
-    poster_url: str
+    poster_for_main_page_url: str
     studio: str
+    poster_for_video_page_url: str | None = None
 
     @model_validator(mode="after")
     def validator(self):
-        self.release_date = self.release_date.strftime("%d-%m-%Y")  # type: ignore
+        self.release_date = self.release_date.strftime("%Y-%m-%d")  # type: ignore
         self.models = ", ".join(self.models)
         self.categories = ", ".join(self.categories)
         self.tags = ", ".join(self.tags)
+        self.poster_for_video_page_url = self.poster_for_main_page_url
         return self
 
 
