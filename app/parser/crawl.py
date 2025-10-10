@@ -74,6 +74,7 @@ async def pipeline_titles():
         await video.save()
         logger.info(f"[Title] {video.jav_code}: {new_title}")
 
+
 async def pipeline_thumbnails():
     await init_mongo()
     saver = ThumbnailSaver()
