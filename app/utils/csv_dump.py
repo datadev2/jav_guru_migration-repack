@@ -12,9 +12,8 @@ class CSVDump:
         self._schema = schema
         self._delimiter = delimiter
 
-    def __call__(self, videos: list[Video]) -> tuple[str, list]:
+    def __call__(self, videos: list[Video]) -> str:
         validated_data = []
-        ids = []
         for video in videos:
             best_hd_source = self._fetch_best_source(video.sources)
             if not best_hd_source:
@@ -32,24 +31,40 @@ class CSVDump:
                 "studio": video.studio.name if video.studio else "",
             }
             validated_data.append(self._schema(**raw).model_dump(mode="json"))
-            ids.append(str(video.id))
         csv_string = self._make_csv_string(validated_data)
-        return csv_string, ids
+        return csv_string
 
     @staticmethod
     def _fetch_best_source(
         sources: list[VideoSource],
         res: list[str] = ["4k", "2k", "1080p", "720p"]
     ) -> VideoSource | None:
+        """Select a source with the highest resolution.
+        E.g., if sources = [
+            VideoSource(origin="pornolab", status="imported", resolution="1080p"),
+            VideoSource(origin="ijavtorrent", status="saved", resolution="4k"),
+        ], the method will return "ijavtorrent" source, as its resolution is higher and
+        it was not imported to the KVS yet.
+        If sources = [
+            VideoSource(origin="pornolab", status="imported", resolution="1080p"),
+            VideoSource(origin="myjavbay", status="saved", resolution="1080p"),
+        ], the method will return None, as the new, recently saved source "myjavbay" has the same
+        resolution as the "pornolab"'s and there's no point in importing the source with the same resolution.
+
+        """
         valid = [s for s in sources if s.resolution in res]
         if not valid:
             return None
-        best_overall_res = min(valid, key=lambda s: res.index(s.resolution)).resolution
-        return next(
-            (s for s in sorted(valid, key=lambda s: res.index(s.resolution))
-            if s.status == "saved" and s.resolution == best_overall_res),
-            None
-        )
+        non_saved = [s for s in valid if s.status != "saved"]
+        if non_saved:
+            best_non_saved_res = min(non_saved, key=lambda s: res.index(s.resolution)).resolution
+            best_non_saved_index = res.index(best_non_saved_res)
+        else:
+            best_non_saved_index = len(res)
+        better_saved = [s for s in valid if s.status == "saved" and res.index(s.resolution) < best_non_saved_index]
+        if not better_saved:
+            return None
+        return min(better_saved, key=lambda s: res.index(s.resolution))
 
     def _make_csv_string(self, data: list[dict]):
         output = StringIO()

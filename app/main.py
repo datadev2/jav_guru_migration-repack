@@ -46,7 +46,8 @@ async def fetch_csv_for_import(last_video_code: str = "", limit: int = 0):
     )
     videos = await mongo_query_coro.to_list()
     logger.info(f"Found {len(videos)} videos satisfying the search params")
-    csv_data, ids = csv_dump(videos)
+    ids = [str(video.id) for video in videos]
+    csv_data = csv_dump(videos)
     logger.info(f"Fetched {len(ids)} videos that can be imported to KVS")
     return Response(content=csv_data, media_type="text/plain", headers={"X-Video-IDs": json.dumps(ids)})
 
