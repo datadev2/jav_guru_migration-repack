@@ -1,11 +1,11 @@
 import json
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, HTTPException
 from loguru import logger
 
 from app.db.database import init_mongo
-from app.db.models import Video
+from app.db.models import KVSImportConfirm, Video
 from app.utils.csv_dump import csv_dump
 
 
@@ -23,7 +23,7 @@ app = FastAPI(title="JavGuru Parser/Downloader", version="1.0.0", lifespan=lifes
 @app.get("/csv")
 async def fetch_csv_for_import(last_video_code: str = "", limit: int = 0):
     search_params = {
-        "javguru_status": "downloaded",
+        "sources.status": "saved",
         "rewritten_title": {"$ne": None},
         "thumbnail_s3_url": {"$ne": None},
         "javct_enriched": True,
@@ -49,3 +49,20 @@ async def fetch_csv_for_import(last_video_code: str = "", limit: int = 0):
     csv_data, ids = csv_dump(videos)
     logger.info(f"Fetched {len(ids)} videos that can be imported to KVS")
     return Response(content=csv_data, media_type="text/plain", headers={"X-Video-IDs": json.dumps(ids)})
+
+
+@app.post("/mark-as-imported")
+async def mark_video_sources_as_imported(payload: KVSImportConfirm):
+    if not payload.video_ids:
+        raise HTTPException(status_code=400, detail="video_ids is empty")
+    updated = 0
+    for video_id in payload.video_ids:
+        video = await Video.get(video_id)
+        if not video:
+            continue
+        for source in video.sources:
+            if source.status == "saved":
+                source.status = "imported"
+        await video.save()
+        updated += 1
+    return {"updated": updated}
