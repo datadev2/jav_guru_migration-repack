@@ -29,7 +29,7 @@ class CSVDump:
                 "tags": [tag.name for tag in video.tags],
                 "s3_path": best_hd_source.s3_path,
                 "poster_for_main_page_url": video.thumbnail_s3_url.unicode_string(),
-                "studio": video.studio.name,
+                "studio": video.studio.name if video.studio else "",
             }
             validated_data.append(self._schema(**raw).model_dump(mode="json"))
             ids.append(str(video.id))
@@ -37,12 +37,19 @@ class CSVDump:
         return csv_string, ids
 
     @staticmethod
-    def _fetch_best_source(sources: list[VideoSource], res=["4k", "2k", "1080p", "720p"]) -> VideoSource | None:
-        res_normalized = [r.lower() for r in res]
-        valid = [s for s in sources if s.resolution.lower() in res_normalized]
+    def _fetch_best_source(
+        sources: list[VideoSource],
+        res: list[str] = ["4k", "2k", "1080p", "720p"]
+    ) -> VideoSource | None:
+        valid = [s for s in sources if s.resolution in res]
         if not valid:
             return None
-        return min(valid, key=lambda s: res_normalized.index(s.resolution.lower()))
+        best_overall_res = min(valid, key=lambda s: res.index(s.resolution)).resolution
+        return next(
+            (s for s in sorted(valid, key=lambda s: res.index(s.resolution))
+            if s.status == "saved" and s.resolution == best_overall_res),
+            None
+        )
 
     def _make_csv_string(self, data: list[dict]):
         output = StringIO()
