@@ -142,7 +142,7 @@ class VideoCSV(BaseModel):
         return self
 
 
-class KVSUploadConfirm(BaseModel):
+class KVSImportConfirm(BaseModel):
     video_ids: list[str]
 
 
