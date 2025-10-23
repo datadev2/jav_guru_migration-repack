@@ -30,7 +30,7 @@ class ThumbnailSaver:
                     client,
                     semaphore,
                     video.thumbnail_url.unicode_string(),  # type: ignore
-                    f"{video.jav_code.replace(" ", "").replace("/", "").lower()}.jpg",
+                    f"{video.jav_code.replace(' ', '').replace('/', '').lower()}.jpg",
                     video,
                 )
                 for video in videos

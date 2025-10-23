@@ -1,4 +1,3 @@
-import asyncio
 from typing import Callable
 
 from beanie import Document
@@ -9,6 +8,11 @@ from app.db.models import Category, Model, Studio, Tag, Video
 from app.parser.base import ParserAdapter
 from app.parser.driver import SeleniumDriver
 from app.parser.interactions import SeleniumService
+
+ENRICH_FIELD_BY_SITE = {
+    "javct": "javct_enriched",
+    "javtiful": "javtiful_enriched",
+}
 
 
 class Parser(SeleniumDriver):
@@ -137,7 +141,7 @@ class Parser(SeleniumDriver):
         Args:
             max_videos: maximum number of videos to enrich (None = process all).
         """
-        query = Video.find(Video.site == self.adapter.site_name, Video.studio == None)  # noqa E711
+        query = Video.find(Video.site == self.adapter.site_name, Video.javguru_status == "added")  # noqa E711
         videos = await query.to_list()
         if max_videos:
             videos = videos[:max_videos]
@@ -199,20 +203,38 @@ class Parser(SeleniumDriver):
             await video.save()
             logger.info(f"[Parser] Updated {video.jav_code} | {video.title[:50]}...")
 
-    async def enrich_videos(self) -> None:
-        all_categories = await Category.find_all().to_list()
-        all_tags = await Tag.find_all().to_list()
-        all_videos = await Video.find_all().to_list()
+    async def enrich_videos(self, max_videos: int = 50) -> None:
         site_name = self.adapter.site_name
-        if site_name == "javct":
-            videos_to_enrich = [video for video in all_videos if not video.javct_enriched]
-        elif site_name == "javtiful":
-            videos_to_enrich = [video for video in all_videos if not video.javtiful_enriched]
-        logger.info(f"Videos to enrich: {len(videos_to_enrich)}")
-        for video in videos_to_enrich:
-            logger.info(f"Enriching video document {video.jav_code} with data from {site_name}...")
-            video_enriched = self.adapter.enrich_video(self.selenium, video, all_categories, all_tags)
-            if video_enriched:
-                await video_enriched.save()
-                logger.success(f"Video {video.jav_code} has been processed using {site_name} adapter and saved")
-                await asyncio.sleep(10)
+        enrich_field = ENRICH_FIELD_BY_SITE.get(site_name)
+
+        if not enrich_field:
+            logger.warning(f"[{site_name}] No enrichment flag defined")
+            return
+
+        videos = Video.find({enrich_field: False, "jav_code": {"$ne": ""}}).limit(max_videos)
+
+        total = await videos.count()
+        logger.info(f"[{site_name}] Videos pending enrichment: {total}, processing max {max_videos}")
+
+        categories = {c.name: c async for c in Category.find_all()}
+        tags = {t.name: t async for t in Tag.find_all()}
+
+        processed = 0
+        async for video in videos:
+            processed += 1
+            try:
+                enriched = self.adapter.enrich_video(
+                    self.selenium, video, list(categories.values()), list(tags.values())
+                )
+                if not enriched:
+                    logger.info(f"[{site_name}] [{processed}/{max_videos}] Skipped {video.jav_code} — no data")
+                    continue
+
+                setattr(enriched, enrich_field, True)
+                await enriched.save()
+                logger.success(f"[{site_name}] [{processed}/{max_videos}] {video.jav_code} enriched successfully")
+
+            except Exception as e:
+                logger.warning(f"[{site_name}] [{processed}/{max_videos}] Failed to enrich {video.jav_code}: {e}")
+
+        logger.info(f"[{site_name}] Enrichment completed. Processed {processed}/{max_videos}")
