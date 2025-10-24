@@ -187,19 +187,20 @@ class Parser(SeleniumDriver):
                 if studio:
                     video.studio = studio
 
-            video.javguru_status = "parsed"
+            if not video.jav_code:
+                logger.warning(f"[Parser] {video.page_link} missing jav_code, skipping")
+                continue
 
-            existing = None
-            if video.jav_code:
-                existing = await Video.find_one(Video.jav_code == video.jav_code, Video.id != video.id)
-
+            
+            existing = await Video.find_one(Video.jav_code == video.jav_code, Video.id != video.id)
             if existing:
                 logger.warning(
                     f"[Parser] Duplicate jav_code detected: {video.jav_code}. Deleting current placeholder {video.id}"
                 )
                 await video.delete()
                 continue
-
+            
+            video.javguru_status = "parsed"
             await video.save()
             logger.info(f"[Parser] Updated {video.jav_code} | {video.title[:50]}...")
 
