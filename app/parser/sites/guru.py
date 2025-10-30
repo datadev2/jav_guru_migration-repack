@@ -343,4 +343,9 @@ class GuruAdapter:
         video.uncensored = self._detect_uncensored(selenium)
         logger.info(f"[GuruAdapter] {video.jav_code} uncensored/censored parsed: {video.uncensored}")
 
+        # validation
+        if not video.jav_code:
+            logger.warning(f"[GuruAdapter] Missing jav_code for {video.page_link}")
+            return None
+        
         return video

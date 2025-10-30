@@ -1,5 +1,5 @@
 from loguru import logger
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 
 from app.db.models import Category, Tag, Video
@@ -33,36 +33,53 @@ class JavctAdapter:
         return list(categories.values())
 
     def enrich_video(
-        self, selenium: SeleniumService, video: Video, all_categories: list[Category], all_tags: list[Tag]
+        self,
+        selenium: SeleniumService,
+        video: Video,
+        all_categories: list[Category],
+        all_tags: list[Tag],
+
     ) -> Video | None:
         search_url = f"{self.BASE_URL}/v/{video.jav_code.lower()}"
+
         try:
             selenium.get(search_url)
         except TimeoutException:
-            logger.info(f"[!] Search on Javct failed: timeout for video {video.jav_code}")
+            logger.warning(f"[Javct] Timeout while loading {video.jav_code}")
             return None
-        video.javct_enriched = True  # Make this flag True anyway.
-        categories_found = []
-        categories_list_el = selenium.find_first(
-            "/html/body/section[2]/div[2]/div/div[1]/div/div[1]/div/div/div/div[2]/div/ul/li[5]"
+
+        not_found = selenium.find_first("//h1[contains(text(),'404')]") or not selenium.find_elements(
+            "//div[contains(@class,'card__content')]"
         )
-        if not categories_list_el:
-            logger.info(f"[!] Search on Javct failed: video {video.jav_code} not found")
+        if not_found:
+            logger.info(f"[Javct] Page {search_url} not found (404 or empty). Marking as processed.")
+            video.javct_enriched = True
             return video
+
+        categories_el = selenium.find_first("//ul[@class='card__meta']/li[span[contains(text(),'Categories:')]]")
+        if not categories_el:
+            logger.info(f"[Javct] No categories found for {video.jav_code}")
+            video.javct_enriched = True
+            return video
+
         try:
-            categories = categories_list_el.find_elements(By.TAG_NAME, "a")  # type: ignore
-            for cat in categories:
-                cat_name = cat.get_attribute("title")
-                if not cat_name:
-                    continue
-                categories_found.append(cat_name.strip())
-        except (NoSuchElementException, AttributeError):
-            logger.info(f"[!] Search on Javct failed: video {video.jav_code} not found or page elements not found")
+            anchors = categories_el.find_elements(By.TAG_NAME, "a")
+            categories_found = [
+                a.get_attribute("title") or a.text.strip() for a in anchors if a.text or a.get_attribute("title")
+            ]
+            categories_found = [c.strip() for c in categories_found if c]
+        except Exception as e:
+            logger.warning(f"[Javct] Failed to parse categories for {video.jav_code}: {e}")
+            video.javct_enriched = True
             return video
-        for cat in categories_found:
-            try:
-                category_from_db = next((c for c in all_categories if c.name == cat))
-                video.categories.append(category_from_db)  # type: ignore
-            except StopIteration:
-                logger.info(f"[!] Category {cat} not found in DB!")
+
+        category_map = {c.name: c for c in all_categories}
+        for cat_name in categories_found:
+            cat_obj = category_map.get(cat_name)
+            if cat_obj:
+                video.categories.append(cat_obj)
+            else:
+                logger.debug(f"[Javct] Category '{cat_name}' not found in DB")
+
+        video.javct_enriched = True
         return video
