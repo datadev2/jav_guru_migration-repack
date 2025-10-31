@@ -127,7 +127,6 @@ class JavtifulAdapter:
                 if type_a:
                     video_type_found = type_a.text(strip=True)
 
-        # Передаём чистые данные — ORM не трогаем
         video.categories = categories_found
         video.tags = tags_found
         video.actresses = actresses_found
