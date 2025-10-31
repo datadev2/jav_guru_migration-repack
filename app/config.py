@@ -33,8 +33,7 @@ class Config(BaseSettings):
     G_SPREADSHEET_TAB_PROMPT: str = "Grok Prompt Test"
     G_SPREADSHEET_CREDS: str
 
-    PROXY_POOL: list[str] = Field(default_factory=list)
-
+    PROXY_POOL: str | list[str] = Field(default_factory=list)
     @field_validator("PROXY_POOL", mode="before")
     @classmethod
     def parse_proxy_pool(cls, v):
