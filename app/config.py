@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from pydantic import Field, MongoDsn, RedisDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -32,6 +34,24 @@ class Config(BaseSettings):
     G_SPREADSHEET_PORNOLAB_TAB: str = "Pornolab Data"
     G_SPREADSHEET_TAB_PROMPT: str = "Grok Prompt Test"
     G_SPREADSHEET_CREDS: str
+
+    PROXY_POOL: ClassVar[list[str]] = [
+        "socks5://jsowlneb:8vhkty4dffn1@154.7.185.220:6126",
+        "socks5://jsowlneb:8vhkty4dffn1@45.94.25.66:5455",
+        "socks5://jsowlneb:8vhkty4dffn1@64.137.107.211:5489",
+        "socks5://jsowlneb:8vhkty4dffn1@64.137.107.168:5446",
+        "socks5://jsowlneb:8vhkty4dffn1@64.137.107.106:5384",
+        # 'socks5://jsowlneb:8vhkty4dffn1@64.137.107.155:5433',
+        # 'socks5://jsowlneb:8vhkty4dffn1@64.137.107.100:5378',
+        # 'socks5://jsowlneb:8vhkty4dffn1@91.201.141.166:5549',
+        # 'socks5://jsowlneb:8vhkty4dffn1@216.173.97.207:5601',
+        # 'socks5://jsowlneb:8vhkty4dffn1@193.36.76.111:5399',
+        # 'socks5://jsowlneb:8vhkty4dffn1@193.36.76.35:5323',
+        # 'socks5://jsowlneb:8vhkty4dffn1@193.36.76.34:5322',
+        # 'socks5://jsowlneb:8vhkty4dffn1@64.137.107.192:5470',
+        # 'socks5://jsowlneb:8vhkty4dffn1@193.36.76.42:5330',
+        # 'socks5://jsowlneb:8vhkty4dffn1@193.36.76.67:5355',
+    ]
 
     GROK_API_KEY: str
     PROMPT_DEFAULT: str = """I need you to help me rewrite video titles for JAV movies. 
