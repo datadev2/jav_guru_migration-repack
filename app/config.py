@@ -1,5 +1,3 @@
-from typing import ClassVar
-
 from pydantic import Field, MongoDsn, RedisDsn, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
