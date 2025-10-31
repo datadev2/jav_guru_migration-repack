@@ -35,11 +35,6 @@ class SeleniumService:
             time.sleep(0.5)
         return False
 
-    def _is_blocked(self) -> bool:
-        page = self.driver.page_source
-        title = self.driver.title.lower()
-        return "403" in title or "access denied" in page.lower() or "cf-error" in page
-
     def get(
         self,
         url: str,
