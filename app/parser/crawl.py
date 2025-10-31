@@ -1,4 +1,5 @@
 import asyncio
+import traceback
 from typing import Literal
 
 from loguru import logger
@@ -26,41 +27,30 @@ if site not in SITE_TO_ADAPTER:
 adapter = SITE_TO_ADAPTER[site]()
 
 
-async def pipeline_init(start_page: int, end_page: int, headless: bool = False):
+async def pipeline_init(start_page: int, end_page: int, max_videos: int):
     await init_mongo()
     try:
-        with Parser(adapter=adapter, headless=headless) as parser:
-            parser.init_adblock()
-            # --
-            # await parser.get_categories()
-            # await parser.get_tags()
-            # await parser.get_actresses()
-            # await parser.get_studios()
-            # --
+        async with Parser(adapter=adapter) as parser:
             await parser.get_videos(start_page=start_page, end_page=end_page)
-            await parser.get_videos_data()
+            await parser.get_videos_data(max_videos=max_videos)
 
-            logger.info("Pipeline finished successfully.")
+        logger.info("Pipeline finished successfully.")
     except Exception as e:
-        import traceback
-
         traceback.print_exc()
-        logger.error("Pipeline failed: {}", e, exc_info=True)
+        logger.error("Pipeline failed", e, exc_info=True)
 
 
-async def pipeline_enrich(site_name: Literal["javct", "javtiful"], headless: bool = False):
+async def pipeline_enrich(site_name: Literal["javct", "javtiful"], max_videos: int):
     if site_name not in ("javct", "javtiful"):
         raise ValueError("Site name arg must be either javct or javtiful!")
     adapter = SITE_TO_ADAPTER[site_name]()
     await init_mongo()
     try:
-        with Parser(adapter=adapter, headless=headless) as parser:
+        async with Parser(adapter=adapter) as parser:
             parser.init_adblock()
-            await parser.enrich_videos()
+            await parser.enrich_videos(max_videos=max_videos)
             logger.info("Pipeline finished successfully.")
     except Exception as e:
-        import traceback
-
         traceback.print_exc()
         logger.error("Pipeline failed: {}", e, exc_info=True)
 
@@ -83,10 +73,16 @@ async def pipeline_thumbnails():
 
 
 async def main():
-    # await pipeline_init(start_page=4455, end_page=4450, headless=True)
-    # await pipeline_enrich(headless=True)
+    await pipeline_init(start_page=3500, end_page=3500, max_videos=1000)
+    # await pipeline_enrich(config.SITE_NAME, max_videos=1000)
+
+    # --- Fast run ---
+    await pipeline_enrich("javct", max_videos=1000)
+    await pipeline_enrich("javtiful", max_videos=1000)
+    # --- Fast run ---
+
     # await pipeline_titles()
-    await pipeline_thumbnails()
+    # await pipeline_thumbnails()
 
 
 if __name__ == "__main__":

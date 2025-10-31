@@ -1,4 +1,4 @@
-from pydantic import Field, MongoDsn, RedisDsn, SecretStr
+from pydantic import Field, MongoDsn, RedisDsn, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,6 +32,14 @@ class Config(BaseSettings):
     G_SPREADSHEET_PORNOLAB_TAB: str = "Pornolab Data"
     G_SPREADSHEET_TAB_PROMPT: str = "Grok Prompt Test"
     G_SPREADSHEET_CREDS: str
+
+    PROXY_POOL: str | list[str] = Field(default_factory=list)
+    @field_validator("PROXY_POOL", mode="before")
+    @classmethod
+    def parse_proxy_pool(cls, v):
+        if isinstance(v, str):
+            return [p.strip() for p in v.split(",") if p.strip()]
+        return v
 
     GROK_API_KEY: str
     PROMPT_DEFAULT: str = """I need you to help me rewrite video titles for JAV movies. 

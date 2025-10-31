@@ -1,3 +1,4 @@
+import time
 from typing import Optional, Tuple
 
 from loguru import logger
@@ -15,10 +16,45 @@ class SeleniumService:
         self._wait = WebDriverWait(driver, timeout)
         self.driver.set_page_load_timeout(timeout)
 
-    def get(self, url: str, wait_selector: Optional[Tuple[By, str]] = None, timeout: Optional[int] = None):
+    def _wait_for_challenge(self, timeout: int = 5) -> bool:
+        start = time.time()
+        while time.time() - start < timeout:
+            page = self.driver.page_source
+            if any(
+                phrase in page
+                for phrase in (
+                    "cdn-cgi/challenge-platform",
+                    "Checking your browser",
+                    "Verifying you are human",
+                    "Проверяем, человек ли вы",
+                    "проверить безопасность вашего подключения",
+                    "Attention Required",
+                )
+            ):
+                return True
+            time.sleep(0.5)
+        return False
+
+    def get(
+        self,
+        url: str,
+        wait_selector: Optional[Tuple[By, str]] = None,
+        timeout: Optional[int] = None,
+    ):
         try:
             self.driver.get(url)
+
+            if self._wait_for_challenge():
+                logger.warning(f"Cloudflare challenge detected at {url}")
+                logger.info("Waiting for captcha to be solved manually...")
+
+                while self._wait_for_challenge():
+                    time.sleep(3)
+
+                logger.info("The captcha has been solved. Let's continue.")
+
             logger.debug(f"Navigated to {url}")
+
             if wait_selector:
                 self.wait_for_element(wait_selector, timeout=timeout)
                 logger.debug(f"Element appeared: {wait_selector}")

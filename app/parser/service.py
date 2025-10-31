@@ -6,8 +6,6 @@ from loguru import logger
 
 from app.db.models import Category, Model, Studio, Tag, Video
 from app.parser.base import ParserAdapter
-from app.parser.driver import SeleniumDriver
-from app.parser.interactions import SeleniumService
 
 ENRICH_FIELD_BY_SITE = {
     "javct": "javct_enriched",
@@ -15,17 +13,16 @@ ENRICH_FIELD_BY_SITE = {
 }
 
 
-class Parser(SeleniumDriver):
-    def __init__(self, adapter: ParserAdapter, headless: bool = True, skip_driver: bool = False):
-        super().__init__(headless=headless, skip_driver=skip_driver)
+class Parser:
+    def __init__(self, adapter: ParserAdapter):
         self.adapter = adapter
-        self.selenium = SeleniumService(self.driver) if not skip_driver else None
 
-    def __enter__(self):
+    async def __aenter__(self):
+        await self.adapter.__aenter__()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.driver.quit()
+    async def __aexit__(self, *args):
+        await self.adapter.__aexit__(*args)
 
     def init_adblock(self):
         try:
@@ -93,8 +90,7 @@ class Parser(SeleniumDriver):
         return await self._load_and_insert(Model, self.adapter.parse_directors, "directors")
 
     async def get_videos(self, start_page: int | None = None, end_page: int = 1):
-        raw_videos = self.adapter.parse_videos(
-            self.selenium,
+        raw_videos = await self.adapter.parse_videos(
             start_page=start_page,
             end_page=end_page,
         )
@@ -146,63 +142,84 @@ class Parser(SeleniumDriver):
         if max_videos:
             videos = videos[:max_videos]
 
-        logger.info(f"[Parser] Enriching {len(videos)} videos with details")
+        logger.info(f"[{self.adapter.site_name}] Enriching {len(videos)} videos with details")
 
+        updated = 0
         for video in videos:
-            parsed = self.adapter.parse_video(self.selenium, video)
-            if not parsed:
+            try:
+                parsed = await self.adapter.parse_video(video)
+
+                if not parsed:
+                    logger.warning(f"[{self.adapter.site_name}] Failed to parse {video.page_link}")
+                    continue
+
+                video.title = parsed.title
+                video.thumbnail_url = parsed.thumbnail_url
+                video.jav_code = parsed.jav_code
+                video.release_date = parsed.release_date
+                video.uncensored = parsed.uncensored
+
+                if parsed.categories:
+                    video.categories = await Category.find(
+                        In(Category.name, parsed.categories),
+                        Category.site == self.adapter.site_name,
+                    ).to_list()
+
+                if parsed.tags:
+                    video.tags = await Tag.find(
+                        In(Tag.name, parsed.tags),
+                        Tag.site == self.adapter.site_name,
+                    ).to_list()
+
+                if parsed.directors:
+                    video.directors = await Model.find(
+                        In(Model.name, parsed.directors),
+                        Model.type == "director",
+                        Model.site == self.adapter.site_name,
+                    ).to_list()
+
+                if parsed.actors:
+                    video.actors = await Model.find(
+                        In(Model.name, parsed.actors),
+                        Model.type == "actor",
+                        Model.site == self.adapter.site_name,
+                    ).to_list()
+
+                if parsed.actresses:
+                    video.actresses = await Model.find(
+                        In(Model.name, parsed.actresses),
+                        Model.type == "actress",
+                        Model.site == self.adapter.site_name,
+                    ).to_list()
+
+                if parsed.studio:
+                    studio = await Studio.find_one(
+                        Studio.name == parsed.studio,
+                        Studio.site == self.adapter.site_name,
+                    )
+                    if studio:
+                        video.studio = studio
+
+                if not video.jav_code:
+                    logger.warning(f"[{self.adapter.site_name}] {video.page_link} missing jav_code, skipping")
+                    continue
+
+                existing = await Video.find_one(Video.jav_code == video.jav_code, Video.id != video.id)
+                if existing:
+                    logger.warning(f"[{self.adapter.site_name}] Duplicate jav_code: {video.jav_code}")
+                    await video.delete()
+                    continue
+
+                video.javguru_status = "parsed"
+                await video.save()
+                updated += 1
+                logger.info(f"[{self.adapter.site_name}] Updated {video.jav_code} | {video.title[:60]}")
+
+            except Exception as e:
+                logger.error(f"[{self.adapter.site_name}] parse failed: {video.page_link} | {e}", exc_info=True)
                 continue
 
-            video.title = parsed.title
-            video.thumbnail_url = parsed.thumbnail_url
-            video.jav_code = parsed.jav_code
-            video.release_date = parsed.release_date
-            video.uncensored = parsed.uncensored
-
-            if parsed.categories:
-                video.categories = await Category.find(
-                    In(Category.name, parsed.categories), Category.site == self.adapter.site_name
-                ).to_list()
-
-            if parsed.tags:
-                video.tags = await Tag.find(In(Tag.name, parsed.tags), Tag.site == self.adapter.site_name).to_list()
-
-            if parsed.directors:
-                video.directors = await Model.find(
-                    In(Model.name, parsed.directors), Model.type == "director", Model.site == self.adapter.site_name
-                ).to_list()
-
-            if parsed.actors:
-                video.actors = await Model.find(
-                    In(Model.name, parsed.actors), Model.type == "actor", Model.site == self.adapter.site_name
-                ).to_list()
-
-            if parsed.actresses:
-                video.actresses = await Model.find(
-                    In(Model.name, parsed.actresses), Model.type == "actress", Model.site == self.adapter.site_name
-                ).to_list()
-
-            if parsed.studio:
-                studio = await Studio.find_one(Studio.name == parsed.studio, Studio.site == self.adapter.site_name)
-                if studio:
-                    video.studio = studio
-
-            if not video.jav_code:
-                logger.warning(f"[Parser] {video.page_link} missing jav_code, skipping")
-                continue
-
-            
-            existing = await Video.find_one(Video.jav_code == video.jav_code, Video.id != video.id)
-            if existing:
-                logger.warning(
-                    f"[Parser] Duplicate jav_code detected: {video.jav_code}. Deleting current placeholder {video.id}"
-                )
-                await video.delete()
-                continue
-            
-            video.javguru_status = "parsed"
-            await video.save()
-            logger.info(f"[Parser] Updated {video.jav_code} | {video.title[:50]}...")
+        logger.success(f"[{self.adapter.site_name}] ✓ Updated {updated} videos in total")
 
     async def enrich_videos(self, max_videos: int = 50) -> None:
         site_name = self.adapter.site_name
@@ -224,12 +241,24 @@ class Parser(SeleniumDriver):
         async for video in videos:
             processed += 1
             try:
-                enriched = self.adapter.enrich_video(
-                    self.selenium, video, list(categories.values()), list(tags.values())
-                )
+                enriched = await self.adapter.enrich_video(video, list(categories.values()), list(tags.values()))
                 if not enriched:
                     logger.info(f"[{site_name}] [{processed}/{max_videos}] Skipped {video.jav_code} — no data")
                     continue
+
+                # --- normalize lists if parser returned strings ---
+                if enriched.categories and isinstance(enriched.categories[0], str):
+                    enriched.categories = await Category.find(
+                        In(Category.name, enriched.categories), Category.site == site_name
+                    ).to_list()
+
+                if enriched.tags and isinstance(enriched.tags[0], str):
+                    enriched.tags = await Tag.find(In(Tag.name, enriched.tags), Tag.site == site_name).to_list()
+
+                if enriched.actresses and isinstance(enriched.actresses[0], str):
+                    enriched.actresses = await Model.find(
+                        In(Model.name, enriched.actresses), Model.type == "actress", Model.site == site_name
+                    ).to_list()
 
                 setattr(enriched, enrich_field, True)
                 await enriched.save()
