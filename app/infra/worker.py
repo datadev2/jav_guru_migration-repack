@@ -9,7 +9,8 @@ from app.db.models import Video
 from app.download.service import run_download
 from app.google_export.export import GSheetService
 from app.infra.queue import queue
-from app.parser.crawl import pipeline_enrich, pipeline_init, pipeline_thumbnails, pipeline_titles
+from app.parser.crawl import (get_current_range, pipeline_enrich, pipeline_init, pipeline_thumbnails, pipeline_titles,
+                              save_next_range)
 
 
 @queue.task(name="download_single_video")
@@ -51,12 +52,12 @@ def download_fresh_videos_from_guru_task(limit: int = 50, headless: bool = True)
         video_ids.append(str(video.id))
         time.sleep(0.5)
 
-    return f"Sent {len(videos_to_download)} videos for download from javguru: {", ".join(video_ids)}"
+    return f"Sent {len(videos_to_download)} videos for download from javguru: {', '.join(video_ids)}"
 
 
 @queue.task(name="parse_jav_guru")
-def parse_jav_guru_task(start_page: int, end_page: int, headless: bool = True) -> None:
-    asyncio.run(pipeline_init(start_page, end_page, headless))
+def parse_jav_guru_task(start_page: int, end_page: int, max_videos: int) -> None:
+    asyncio.run(pipeline_init(start_page, end_page, max_videos))
 
 
 @queue.task(name="enrich_videos_with_data")
@@ -99,17 +100,24 @@ def update_s3_paths_and_resolutions_task(read_range: str = "A2:T", write_start_c
 # Use functions below to send celery tasks manually via app/send_tasks.py
 
 
-def download_fresh_videos_from_guru_task_caller(limit: int = 50, headless: bool = True):
+def download_fresh_videos_from_guru_task_caller(limit: int = 50):
     download_fresh_videos_from_guru_task.delay(**locals())
     logger.info(f"Sent task to download {limit} videos from jav.guru")
 
 
-def parse_jav_guru_task_caller(start_page: int, end_page: int, headless: bool = True):
-    parse_jav_guru_task.delay(**locals())
-    logger.info("Sent task to parse jav.guru")
+@queue.task
+def parse_jav_guru_task_caller():
+    current_data = get_current_range()
+    start_page = current_data["start_page"]
+    end_page = current_data["end_page"]
+    max_videos = current_data["max_videos"]
+
+    parse_jav_guru_task.delay(start_page, end_page, max_videos)
+    logger.info(f"Sent task to parse jav.guru [{start_page} -> {end_page}] ({max_videos} video)")
+    save_next_range(current_data)
 
 
-def enrich_videos_with_data_task_caller(site_name: str, headless: bool = True):
+def enrich_videos_with_data_task_caller(site_name: str):
     enrich_videos_with_data_task.delay(**locals())
     logger.info("Sent task to enrich jav.guru")
 
