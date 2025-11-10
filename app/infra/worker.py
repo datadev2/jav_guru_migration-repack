@@ -9,8 +9,8 @@ from app.db.models import Video
 from app.download.service import run_download
 from app.google_export.export import GSheetService
 from app.infra.queue import queue
-from app.parser.crawl import (get_current_range, pipeline_enrich, pipeline_init, pipeline_thumbnails, pipeline_titles,
-                              save_next_range)
+from app.parser.crawl import (get_current_range, pipeline_enrich, pipeline_guru_enrich, pipeline_guru_pages,
+                              pipeline_thumbnails, pipeline_titles, save_next_range)
 
 
 @queue.task(name="download_single_video")
@@ -55,14 +55,19 @@ def download_fresh_videos_from_guru_task(limit: int = 50, headless: bool = True)
     return f"Sent {len(videos_to_download)} videos for download from javguru: {', '.join(video_ids)}"
 
 
-@queue.task(name="parse_jav_guru")
-def parse_jav_guru_task(start_page: int, end_page: int, max_videos: int) -> None:
-    asyncio.run(pipeline_init(start_page, end_page, max_videos))
+@queue.task(name="guru_pipeline_pages")
+def guru_pipeline_pages_task(start_page: int, end_page: int) -> None:
+    asyncio.run(pipeline_guru_pages(start_page, end_page))
+
+
+@queue.task(name="guru_pipeline_enrich")
+def guru_pipeline_enrich_task(max_videos: int) -> None:
+    asyncio.run(pipeline_guru_enrich(max_videos))
 
 
 @queue.task(name="enrich_videos_with_data")
-def enrich_videos_with_data_task(site_name: str, headless: bool = True) -> None:
-    asyncio.run(pipeline_enrich(site_name, headless))
+def enrich_videos_with_data_task(site_name: str, max_videos: int) -> None:
+    asyncio.run(pipeline_enrich(site_name=site_name, max_videos=max_videos))
 
 
 @queue.task(name="generate_new_titles")
@@ -105,20 +110,26 @@ def download_fresh_videos_from_guru_task_caller(limit: int = 50):
     logger.info(f"Sent task to download {limit} videos from jav.guru")
 
 
-@queue.task
-def parse_jav_guru_task_caller():
+def guru_pipeline_pages_caller():
     current_data = get_current_range()
     start_page = current_data["start_page"]
     end_page = current_data["end_page"]
-    max_videos = current_data["max_videos"]
-
-    parse_jav_guru_task.delay(start_page, end_page, max_videos)
-    logger.info(f"Sent task to parse jav.guru [{start_page} -> {end_page}] ({max_videos} video)")
+    guru_pipeline_pages_task.delay(start_page, end_page)
+    logger.info(f"Sent task: guru pipeline pages [{start_page} -> {end_page}]")
     save_next_range(current_data)
 
 
+def guru_pipeline_enrich_caller():
+    current_data = get_current_range()
+    max_videos = current_data["max_videos"]
+    guru_pipeline_enrich_task.delay(max_videos)
+    logger.info(f"Sent task: guru enrichment ({max_videos} videos)")
+
+
 def enrich_videos_with_data_task_caller(site_name: str):
-    enrich_videos_with_data_task.delay(**locals())
+    current_data = get_current_range()
+    max_videos = current_data["max_videos"]
+    enrich_videos_with_data_task.delay(site_name=site_name, max_videos=max_videos)
     logger.info("Sent task to enrich jav.guru")
 
 
