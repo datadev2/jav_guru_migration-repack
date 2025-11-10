@@ -105,7 +105,6 @@ def download_fresh_videos_from_guru_task_caller(limit: int = 50):
     logger.info(f"Sent task to download {limit} videos from jav.guru")
 
 
-@queue.task
 def parse_jav_guru_task_caller():
     current_data = get_current_range()
     start_page = current_data["start_page"]
