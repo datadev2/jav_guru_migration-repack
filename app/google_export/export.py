@@ -73,9 +73,10 @@ class GSheetService:
             self._gsheets_api.write_to_sheet(updates, self._gsheet_main_tab, "G2", sheet_id)
             logger.info(f"Updated rewritten titles for {len(updates)} rows")
 
-    async def update_s3_paths_and_resolutions(self, read_range: str = "A2:T", write_start_cell: str = "P2"):
+    async def update_s3_paths_and_resolutions(self, read_range: str = "A1760:V", write_start_cell: str = "P2"):
         await init_mongo()
         await self._fetch_pornolab_data_and_save_in_mongo()
+        await self._fetch_ijavtorrent_data_and_save_in_mongo()
         data_to_export = []
         mongo_data = await Video.find().to_list()
         exported_data = self._gsheets_api.read_sheet(self._gsheet_main_tab, read_range, self._gsheet_id)
@@ -134,17 +135,51 @@ class GSheetService:
                 )
             )
             video.runtime_minutes = runtime
-            video.javguru_status = "downloaded"
             await video.save()
             row[-1] = "✓"
         self._gsheets_api.write_to_sheet(pl_excel_data, self._pornolab_tab, "B2", self._gsheet_id)
 
+    async def _fetch_ijavtorrent_data_and_save_in_mongo(self, read_range: str = "B2:P") -> None:
+        ijav_excel_data = self._gsheets_api.read_sheet("IJavTorrent Data", read_range, self._gsheet_id)
+        for row in ijav_excel_data:
+            try:
+                if row[9] != "✓":
+                    continue
+            except IndexError:
+                continue
+            while len(row) < 15:
+                row.append("")
+            jav_code = row[0]
+            video = await Video.find_one({"jav_code": jav_code})
+            if not video:
+                continue
+            exists = "ijavtorrent" in [source.origin for source in video.sources]
+            if exists:
+                continue
+            s3_path = row[10]
+            resolution = row[11]
+            runtime = row[12]
+            file_hash = row[13]
+            video.sources.append(
+                VideoSource(
+                    origin="ijavtorrent",
+                    resolution=resolution,
+                    s3_path=s3_path,
+                    hash_md5=file_hash,
+                )
+            )
+            video.runtime_minutes = runtime
+            # video.javguru_status = "downloaded"
+            await video.save()
+            row[-1] = "✓"
+        self._gsheets_api.write_to_sheet(ijav_excel_data, "IJavTorrent Data", "B2", self._gsheet_id)
+
     @staticmethod
     def _fetch_row_to_export(mongo_and_excel_combined_data: tuple[Video, list]) -> list:
         excel_row = mongo_and_excel_combined_data[1]
-        while len(excel_row) < 20:
+        while len(excel_row) < 22:
             excel_row.append("")
-        if not excel_row[16] or not excel_row[18]:
+        if not excel_row[16] or not excel_row[18] or not excel_row[20]:
             mongo_video = mongo_and_excel_combined_data[0]
             runtime = mongo_video.runtime_minutes
             jav_s3_path, jav_resolution = next(
@@ -155,8 +190,24 @@ class GSheetService:
                 ((source.s3_path, source.resolution) for source in mongo_video.sources if source.origin == "pornolab"),
                 ("", ""),
             )
-            return [runtime, jav_s3_path, jav_resolution, pornolab_s3_path, pornolab_resolution]
-        return [excel_row[i] for i in range(15, 20)]
+            ijavtorrent_s3_path, ijavtorrent_resolution = next(
+                (
+                    (source.s3_path, source.resolution)
+                    for source in mongo_video.sources
+                    if source.origin == "ijavtorrent"
+                ),
+                ("", ""),
+            )
+            return [
+                runtime,
+                jav_s3_path,
+                jav_resolution,
+                pornolab_s3_path,
+                pornolab_resolution,
+                ijavtorrent_s3_path,
+                ijavtorrent_resolution,
+            ]
+        return [excel_row[i] for i in range(15, 22)]
 
 
 class PromptService:

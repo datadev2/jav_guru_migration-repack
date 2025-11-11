@@ -64,6 +64,7 @@ class VideoSource(BaseModel):
     file_size: int = 0
     hash_md5: str = ""
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    status: Literal["saved", "imported", "deleted"] = "saved"
 
 
 class Video(Document):
@@ -139,6 +140,10 @@ class VideoCSV(BaseModel):
         self.tags = ", ".join(self.tags)
         self.poster_for_video_page_url = self.poster_for_main_page_url
         return self
+
+
+class KVSImportConfirm(BaseModel):
+    video_ids: list[str]
 
 
 Collections = [Video, Model, Studio, Category, Tag]
