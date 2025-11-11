@@ -36,8 +36,7 @@ class CSVDump:
 
     @staticmethod
     def _fetch_best_source(
-        sources: list[VideoSource],
-        res: list[str] = ["4k", "2k", "1080p", "720p"]
+        sources: list[VideoSource], res: list[str] = ["4k", "2k", "1080p", "720p"]
     ) -> VideoSource | None:
         """Select a source with the highest resolution.
         E.g., if sources = [

@@ -1,7 +1,7 @@
 import json
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Response, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from loguru import logger
 
 from app.db.database import init_mongo

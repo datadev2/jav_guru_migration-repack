@@ -138,7 +138,7 @@ class GSheetService:
             await video.save()
             row[-1] = "✓"
         self._gsheets_api.write_to_sheet(pl_excel_data, self._pornolab_tab, "B2", self._gsheet_id)
-    
+
     async def _fetch_ijavtorrent_data_and_save_in_mongo(self, read_range: str = "B2:P") -> None:
         ijav_excel_data = self._gsheets_api.read_sheet("IJavTorrent Data", read_range, self._gsheet_id)
         for row in ijav_excel_data:
@@ -191,10 +191,22 @@ class GSheetService:
                 ("", ""),
             )
             ijavtorrent_s3_path, ijavtorrent_resolution = next(
-                ((source.s3_path, source.resolution) for source in mongo_video.sources if source.origin == "ijavtorrent"),
+                (
+                    (source.s3_path, source.resolution)
+                    for source in mongo_video.sources
+                    if source.origin == "ijavtorrent"
+                ),
                 ("", ""),
             )
-            return [runtime, jav_s3_path, jav_resolution, pornolab_s3_path, pornolab_resolution, ijavtorrent_s3_path, ijavtorrent_resolution]
+            return [
+                runtime,
+                jav_s3_path,
+                jav_resolution,
+                pornolab_s3_path,
+                pornolab_resolution,
+                ijavtorrent_s3_path,
+                ijavtorrent_resolution,
+            ]
         return [excel_row[i] for i in range(15, 22)]
 
 
