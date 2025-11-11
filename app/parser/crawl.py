@@ -1,12 +1,13 @@
 import asyncio
+import json
 import traceback
+from pathlib import Path
 from typing import Literal
 
 from loguru import logger
 
 from app.config import config
 from app.db.database import init_mongo
-from app.db.models import Video
 from app.download.thumbnails import ThumbnailSaver
 from app.infra.title_generator import TitleGenerator
 from app.parser.service import Parser
@@ -57,12 +58,8 @@ async def pipeline_enrich(site_name: Literal["javct", "javtiful"], max_videos: i
 
 async def pipeline_titles():
     await init_mongo()
-    title_generator = TitleGenerator()
-    while video := await Video.find_one({"rewritten_title": None}):
-        new_title = await title_generator.generate(video)
-        video.rewritten_title = new_title
-        await video.save()
-        logger.info(f"[Title] {video.jav_code}: {new_title}")
+    generator = TitleGenerator()
+    await generator.run_pipeline()
 
 
 async def pipeline_thumbnails():
@@ -72,16 +69,48 @@ async def pipeline_thumbnails():
     logger.info("Process finished")
 
 
+RANGE_PATH = Path(__file__).parent / "current_range.json"
+
+
+def get_current_range():
+    with open(RANGE_PATH) as f:
+        return json.load(f)
+
+
+def save_next_range(current_data):
+    step = current_data["step"]
+    end_candidate = max(0, current_data["end_page"] - step)
+
+    new_range = {
+        "start_page": current_data["end_page"],
+        "end_page": end_candidate,
+        "step": step,
+        "max_videos": current_data["max_videos"],
+    }
+
+    with open(RANGE_PATH, "w") as f:
+        json.dump(new_range, f)
+
+
 async def main():
-    await pipeline_init(start_page=3500, end_page=3500, max_videos=1000)
+    # ---
+    # current = get_current_range()
+    # await pipeline_init(
+    #     start_page=current["start_page"],
+    #     end_page=current["end_page"],
+    #     max_videos=current["max_videos"]
+    # )
+    # save_next_range(current)
+    # ---
+
     # await pipeline_enrich(config.SITE_NAME, max_videos=1000)
 
     # --- Fast run ---
-    await pipeline_enrich("javct", max_videos=1000)
-    await pipeline_enrich("javtiful", max_videos=1000)
+    # await pipeline_enrich("javct", max_videos=1)
+    # await pipeline_enrich("javtiful", max_videos=14)
     # --- Fast run ---
 
-    # await pipeline_titles()
+    await pipeline_titles()
     # await pipeline_thumbnails()
 
 
