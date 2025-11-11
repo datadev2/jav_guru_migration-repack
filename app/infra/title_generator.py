@@ -12,6 +12,9 @@ from app.google_export.export import PromptService
 class TitleGenerator:
     SEPARATOR_PATTERN = re.compile(r"\s*\|\s*")
     MAX_RETRIES = 3
+    _MAX_TITLE_LENGTH = 120
+    _MIN_TITLE_LENGTH = 10
+    _INVALID_TITLE = "N/A"
 
     def __init__(self, batch_size=5):
         self._client = OpenAI(
@@ -21,6 +24,19 @@ class TitleGenerator:
         self._prompt = PromptService().get_prompt()
         self.BATCH_SIZE = batch_size
 
+    @classmethod
+    def is_valid(cls, title: str, is_batch: bool = False) -> bool:
+        if not title or not isinstance(title, str):
+            return False
+        t = title.strip()
+        if not t.startswith('['):
+            return False
+        if not (cls._MIN_TITLE_LENGTH <= len(t) <= cls._MAX_TITLE_LENGTH):
+            return False
+        if is_batch and cls.SEPARATOR not in t:
+            return False
+        return True
+    
     def _prepare_batch_input(self, videos: list) -> str:
         lines = []
         for video in videos:
@@ -98,10 +114,9 @@ class TitleGenerator:
             return
 
         for video, title in zip(videos, titles):
-            if not title:
-                logger.warning(f"Empty title for {video.jav_code}")
-                continue
-
+            if not self.is_valid(title):
+                title = self._INVALID_TITLE
+                
             video.rewritten_title = title
 
             try:
