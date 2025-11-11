@@ -12,7 +12,7 @@ class CSVDump:
         self._schema = schema
         self._delimiter = delimiter
 
-    def __call__(self, videos: list[Video]) -> str:
+    def __call__(self, videos: list[Video]) -> tuple[str, int]:
         validated_data = []
         for video in videos:
             best_hd_source = self._fetch_best_source(video.sources)
@@ -24,15 +24,15 @@ class CSVDump:
                 "release_date": video.release_date,
                 "file_hash": best_hd_source.hash_md5,
                 "models": [actress.name for actress in video.actresses],
-                "categories": [cat.name for cat in video.categories],
-                "tags": [tag.name for tag in video.tags],
+                "categories": [cat.name.title() for cat in video.categories],
+                "tags": [tag.name.title() for tag in video.tags],
                 "s3_path": best_hd_source.s3_path,
                 "poster_for_main_page_url": video.thumbnail_s3_url.unicode_string(),
                 "studio": video.studio.name if video.studio else "",
             }
             validated_data.append(self._schema(**raw).model_dump(mode="json"))
         csv_string = self._make_csv_string(validated_data)
-        return csv_string
+        return csv_string, len(validated_data)
 
     @staticmethod
     def _fetch_best_source(
