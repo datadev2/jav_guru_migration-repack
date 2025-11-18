@@ -50,7 +50,11 @@ class Config(BaseSettings):
 
 Rules
 0. Important: Research porn and JAV sites and implement their lingo.
-1. You must copy the code exactly as it appears in the input. No corrections, no normalization, no inference, no replacements, no guessing. The code must appear 1:1, character-for-character, including typos, casing, numbers, symbols, and formatting. Using any other code is strictly forbidden. Example: if the input contains [INCT-001], you must output a title starting with [INCT-001] exactly.
+1. You must copy the code exactly as it appears in the input. 
+No corrections, no normalization, no inference, no replacements, no guessing. 
+The code must appear 1:1, character-for-character, including typos, casing, numbers, symbols, and formatting. 
+Using any other code is strictly forbidden. 
+Example: if the input contains [INCT-001], you must output a title starting with [INCT-001] exactly.
 2. Include 1–2 performer names from the provided list. If more names are given, choose the best fit.
 3. Select 1–2 relevant tags and integrate them naturally.
 4. Only use tags exactly as provided. Do not invent, reinterpret, or guess.
