@@ -29,14 +29,30 @@ class TitleGenerator:
         if not title or not isinstance(title, str):
             return False
         t = title.strip()
-        if not t.startswith('['):
+        if not t.startswith("["):
             return False
         if not (cls._MIN_TITLE_LENGTH <= len(t) <= cls._MAX_TITLE_LENGTH):
             return False
         if is_batch and cls.SEPARATOR not in t:
             return False
         return True
-    
+
+    @staticmethod
+    def validate_title(title: str, expected_code: str) -> bool:
+        if not title or not isinstance(title, str):
+            return False
+
+        t = title.strip()
+        prefix = f"[{expected_code}]"
+
+        if not t.startswith(prefix):
+            return False
+
+        if not (10 <= len(t) <= 120):
+            return False
+
+        return True
+
     def _prepare_batch_input(self, videos: list) -> str:
         lines = []
         for video in videos:
@@ -51,7 +67,7 @@ class TitleGenerator:
 
             lines.append(" — ".join(parts))
         return "\n".join(lines)
-
+    
     def _call_api(self, content: str) -> str:
         response = self._client.chat.completions.create(
             model="grok-3-mini-beta",
@@ -68,7 +84,7 @@ class TitleGenerator:
         logger.debug(f"[Grok] Batch input:\n{content}")
 
         raw = await asyncio.to_thread(self._call_api, content)
-        titles = [t.strip() for t in self.SEPARATOR_PATTERN.split(raw)]
+        titles = self.validate_batch(raw, len(videos))
 
         empty_count = sum(1 for t in titles if not t)
         if empty_count > len(titles) // 2:
@@ -114,9 +130,9 @@ class TitleGenerator:
             return
 
         for video, title in zip(videos, titles):
-            if not self.is_valid(title):
-                title = self._INVALID_TITLE
-                
+            if not self.validate_title(title, video.jav_code):
+                title = ""
+
             video.rewritten_title = title
 
             try:
