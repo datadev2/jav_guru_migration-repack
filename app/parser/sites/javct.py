@@ -117,4 +117,4 @@ class JavctAdapter:
 
         video.javct_enriched = True
         logger.success(f"[Javct] ✓ Enriched {video.jav_code} with {len(categories_found)} categories")
-        return
+        return video

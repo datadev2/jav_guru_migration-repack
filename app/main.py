@@ -24,7 +24,7 @@ app = FastAPI(title="JavGuru Parser/Downloader", version="1.0.0", lifespan=lifes
 async def fetch_csv_for_import(last_video_code: str = "", limit: int = 0):
     search_params = {
         "sources.status": "saved",
-        "rewritten_title": {"$ne": None},
+        "rewritten_title": {"$nin": [None, ""]},
         "thumbnail_s3_url": {"$ne": None},
         "javct_enriched": True,
         "javtiful_enriched": True,
