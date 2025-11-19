@@ -1,5 +1,4 @@
 import asyncio
-import re
 
 from loguru import logger
 from openai import OpenAI
@@ -10,11 +9,9 @@ from app.google_export.export import PromptService
 
 
 class TitleGenerator:
-    SEPARATOR_PATTERN = re.compile(r"\s*\|\s*")
     MAX_RETRIES = 3
     _MAX_TITLE_LENGTH = 120
     _MIN_TITLE_LENGTH = 10
-    _INVALID_TITLE = "N/A"
 
     def __init__(self, batch_size=5):
         self._client = OpenAI(
@@ -24,18 +21,17 @@ class TitleGenerator:
         self._prompt = PromptService().get_prompt()
         self.BATCH_SIZE = batch_size
 
-    @classmethod
-    def is_valid(cls, title: str, is_batch: bool = False) -> bool:
-        if not title or not isinstance(title, str):
-            return False
-        t = title.strip()
-        if not t.startswith("["):
-            return False
-        if not (cls._MIN_TITLE_LENGTH <= len(t) <= cls._MAX_TITLE_LENGTH):
-            return False
-        if is_batch and cls.SEPARATOR not in t:
-            return False
-        return True
+    @staticmethod
+    def validate_batch(raw: str, expected_count: int) -> list[str]:
+        if not raw or not isinstance(raw, str):
+            raise ValueError("Empty or invalid batch response")
+
+        parts = [line.strip() for line in raw.split("\n") if line.strip()]
+
+        if len(parts) != expected_count:
+            raise ValueError(f"Batch size mismatch: expected {expected_count}, got {len(parts)}. " f"Raw: {raw}")
+
+        return parts
 
     @staticmethod
     def validate_title(title: str, expected_code: str) -> bool:
@@ -67,7 +63,7 @@ class TitleGenerator:
 
             lines.append(" — ".join(parts))
         return "\n".join(lines)
-    
+
     def _call_api(self, content: str) -> str:
         response = self._client.chat.completions.create(
             model="grok-3-mini-beta",
@@ -141,11 +137,19 @@ class TitleGenerator:
             except Exception as e:
                 logger.error(f"Failed to save {video.jav_code}: {e}")
 
-    async def run_pipeline(self) -> None:
+    async def run_pipeline(self, max_batches=None):
+        if not max_batches:
+            max_batches = None
+
+        batches = 0
+
         while True:
+            if max_batches is not None and batches >= max_batches:
+                break
+
             videos = await self._fetch_batch()
             if not videos:
-                logger.info("No more videos to process")
                 break
 
             await self._process_batch(videos)
+            batches += 1
