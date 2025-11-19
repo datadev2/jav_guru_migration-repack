@@ -185,7 +185,9 @@ class Parser:
                         Model.site == self.adapter.site_name,
                     ).to_list()
 
-                if parsed.actresses:
+                if parsed.actresses == []:
+                    video.empty_actresses_source = True
+                elif parsed.actresses:
                     video.actresses = await Model.find(
                         In(Model.name, parsed.actresses),
                         Model.type == "actress",
