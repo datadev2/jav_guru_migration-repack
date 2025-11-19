@@ -86,8 +86,6 @@ Attribute tags correctly (e.g., “Shaved Ichigo Aoi”).
 25. Pretend every title you give is intended for a big porn site like Pornhub or similar and 
 write it accordingly while keeping JAV structure and topics in mind.
 26. Double-check compliance with all rules before outputting. If a violation occurs, rewrite until it is fixed.
-27. Output format: When multiple videos are sent together, 
-reply with all rewritten titles in the same order, separated by the " | " symbol.
 
 Examples
 Example 1 input: [INCT-001] Doll Play Ichigo Aoi dressed with 
