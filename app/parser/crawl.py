@@ -65,10 +65,10 @@ async def pipeline_enrich(site_name: Literal["javct", "javtiful"], max_videos: i
         logger.error("Pipeline failed: {}", e, exc_info=True)
 
 
-async def pipeline_titles():
+async def pipeline_titles(max_batches: int = 0):
     await init_mongo()
     generator = TitleGenerator()
-    await generator.run_pipeline()
+    await generator.run_pipeline(max_batches=max_batches)
 
 
 async def pipeline_thumbnails():
@@ -95,6 +95,7 @@ def save_next_range(current_data):
         "end_page": end_candidate,
         "step": step,
         "max_videos": current_data["max_videos"],
+        "max_batches": current_data["max_batches"],
     }
 
     with open(RANGE_PATH, "w") as f:
@@ -122,7 +123,7 @@ async def main():
     # await pipeline_enrich("javtiful", max_videos=14)
     # --- Fast run ---
 
-    # await pipeline_titles()
+    # await pipeline_titles(max_batches=current["max_batches"])
     # await pipeline_thumbnails()
 
 
