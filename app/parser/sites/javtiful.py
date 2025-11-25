@@ -88,6 +88,7 @@ class JavtifulAdapter:
         card = tree.css_first("a[href*='/video/']")
         if not card:
             logger.info(f"[Javtiful] Video {video.jav_code} not found on search")
+            video.type_javtiful = ""
             video.javtiful_enriched = True
             return video
 
