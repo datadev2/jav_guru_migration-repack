@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Literal
+from urllib.parse import urlparse
 
 from beanie import Document, Link
 from pydantic import BaseModel, Field, HttpUrl, model_validator
@@ -95,7 +96,7 @@ class Video(Document):
     javct_enriched: bool = False
     javtiful_enriched: bool = False
 
-    javguru_status: Literal["added", "parsed", "downloading", "downloaded", "failed", "imported", "deleted"]
+    javguru_status: Literal["added", "parsed"]
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
