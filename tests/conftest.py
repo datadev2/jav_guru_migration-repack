@@ -7,12 +7,13 @@ import pytest_asyncio
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 
+os.environ.setdefault("KVS_FEED_ENDPOINT", "http://localhost")
+os.environ.setdefault("KVS_FEED_PASSWORD", "TESTPASS")
+
 from app.config import config
 from app.db.models import Category, Model, Studio, Tag, Video
 
 
-os.environ.setdefault("KVS_FEED_ENDPOINT", "http://localhost")
-os.environ.setdefault("KVS_FEED_PASSWORD", "TESTPASS")
 
 
 @pytest.fixture(scope="module")
