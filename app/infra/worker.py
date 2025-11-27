@@ -8,6 +8,7 @@ from app.db.database import init_mongo
 from app.db.models import Video
 from app.download.service import run_download
 from app.google_export.export import GSheetService
+from app.infra.kvs_cleanup import kvs_cleanup_chunk
 from app.infra.queue import queue
 from app.parser.crawl import (get_current_range, pipeline_enrich, pipeline_guru_enrich, pipeline_guru_pages,
                               pipeline_thumbnails, pipeline_titles, save_next_range)
@@ -102,6 +103,11 @@ def update_s3_paths_and_resolutions_task(read_range: str = "A2:T", write_start_c
     asyncio.run(gsheet_svc.update_s3_paths_and_resolutions(read_range, write_start_cell))
 
 
+@queue.task(name="kvs_cleanup_chunk")
+def kvs_cleanup_chunk_task():
+    asyncio.run(kvs_cleanup_chunk())
+
+
 # Use functions below to send celery tasks manually via app/send_tasks.py
 
 
@@ -155,3 +161,8 @@ def export_video_data_to_gsheet_task_caller(
 def update_s3_paths_and_resolutions_task_caller(read_range: str = "A2:T", write_start_cell: str = "P2"):
     update_s3_paths_and_resolutions_task.delay(**locals())
     logger.info("Sent task to update S3 paths and resolutions in gsheet")
+
+
+def kvs_cleanup_caller():
+    kvs_cleanup_chunk_task.delay()
+    logger.info("Sent KVS cleanup task")
