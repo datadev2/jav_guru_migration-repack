@@ -35,6 +35,7 @@ class KVS:
             return []
 
     async def _gather_feed(self) -> list[dict]:
+        """Never call in production. Left only for rare manual checks."""
         feed: list[dict] = []
         limit = 1000
         offset = 0
@@ -56,22 +57,24 @@ class KVS:
 
         return feed
 
-    async def get_uploaded_videos(self) -> list[tuple[int, str]]:
+    async def get_full_feed(self) -> list[dict]:
         feed = await self._gather_feed()
         if not feed:
             logger.info("No KVS feed")
             return []
+        return feed
 
-        validated: list[tuple[int, str]] = []
+    async def get_feed_chunk(self, *, limit: int, skip: int) -> list[KVSSchema]:
+        raw = await self._get_feed_part(limit=limit, offset=skip)
 
-        for row in feed:
+        out: list[KVSSchema] = []
+        for row in raw:
             try:
-                video = self._schema.model_validate(row)
-                validated.append((video.kvs_id, video.file_hash_md5))
+                out.append(self._schema.model_validate(row))
             except ValidationError:
-                logger.error(f"Validation error on video {row}")
-                raise
-        return validated
+                logger.warning(f"KVS row validation failed: {row}")
+
+        return out
 
 
 kvs_feed = KVS()
