@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -8,6 +9,10 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from app.config import config
 from app.db.models import Category, Model, Studio, Tag, Video
+
+
+os.environ.setdefault("KVS_FEED_ENDPOINT", "http://localhost")
+os.environ.setdefault("KVS_FEED_PASSWORD", "TESTPASS")
 
 
 @pytest.fixture(scope="module")
