@@ -1,5 +1,4 @@
 import asyncio
-import re
 
 from loguru import logger
 from openai import OpenAI
@@ -10,8 +9,9 @@ from app.google_export.export import PromptService
 
 
 class TitleGenerator:
-    SEPARATOR_PATTERN = re.compile(r"\s*\|\s*")
     MAX_RETRIES = 3
+    _MAX_TITLE_LENGTH = 120
+    _MIN_TITLE_LENGTH = 10
 
     def __init__(self, batch_size=5):
         self._client = OpenAI(
@@ -20,6 +20,34 @@ class TitleGenerator:
         )
         self._prompt = PromptService().get_prompt()
         self.BATCH_SIZE = batch_size
+
+    @staticmethod
+    def validate_batch(raw: str, expected_count: int) -> list[str]:
+        if not raw or not isinstance(raw, str):
+            raise ValueError("Empty or invalid batch response")
+
+        parts = [line.strip() for line in raw.split("\n") if line.strip()]
+
+        if len(parts) != expected_count:
+            raise ValueError(f"Batch size mismatch: expected {expected_count}, got {len(parts)}. " f"Raw: {raw}")
+
+        return parts
+
+    @staticmethod
+    def validate_title(title: str, expected_code: str) -> bool:
+        if not title or not isinstance(title, str):
+            return False
+
+        t = title.strip()
+        prefix = f"[{expected_code}]"
+
+        if not t.startswith(prefix):
+            return False
+
+        if not (10 <= len(t) <= 120):
+            return False
+
+        return True
 
     def _prepare_batch_input(self, videos: list) -> str:
         lines = []
@@ -52,7 +80,7 @@ class TitleGenerator:
         logger.debug(f"[Grok] Batch input:\n{content}")
 
         raw = await asyncio.to_thread(self._call_api, content)
-        titles = [t.strip() for t in self.SEPARATOR_PATTERN.split(raw)]
+        titles = self.validate_batch(raw, len(videos))
 
         empty_count = sum(1 for t in titles if not t)
         if empty_count > len(titles) // 2:
@@ -98,9 +126,8 @@ class TitleGenerator:
             return
 
         for video, title in zip(videos, titles):
-            if not title:
-                logger.warning(f"Empty title for {video.jav_code}")
-                continue
+            if not self.validate_title(title, video.jav_code):
+                title = ""
 
             video.rewritten_title = title
 
@@ -110,11 +137,19 @@ class TitleGenerator:
             except Exception as e:
                 logger.error(f"Failed to save {video.jav_code}: {e}")
 
-    async def run_pipeline(self) -> None:
+    async def run_pipeline(self, max_batches=None):
+        if not max_batches:
+            max_batches = None
+
+        batches = 0
+
         while True:
+            if max_batches is not None and batches >= max_batches:
+                break
+
             videos = await self._fetch_batch()
             if not videos:
-                logger.info("No more videos to process")
                 break
 
             await self._process_batch(videos)
+            batches += 1

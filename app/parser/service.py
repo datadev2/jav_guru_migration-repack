@@ -24,20 +24,6 @@ class Parser:
     async def __aexit__(self, *args):
         await self.adapter.__aexit__(*args)
 
-    def init_adblock(self):
-        try:
-            self.selenium.get("about:blank")
-            handles = self.driver.window_handles
-            if len(handles) < 2:
-                return
-            second = handles[-1]
-            if second != self.driver.current_window_handle:
-                self.driver.switch_to.window(second)
-            self.driver.close()
-            self.driver.switch_to.window(self.driver.window_handles[0])
-        except Exception:
-            pass
-
     async def _insert_unique(
         self,
         model: type[Document],
@@ -47,6 +33,7 @@ class Parser:
     ) -> int:
         keys = [key_fn(item) for item in raw_items]
         existing = await model.find(In(key_fn(model), keys)).to_list()
+        logger.info("Existing keys in db:", [key_fn(x) for x in existing])
         existing_keys = {key_fn(x) for x in existing}
 
         to_insert = [build_fn(item) for item in raw_items if key_fn(item) not in existing_keys]
@@ -62,7 +49,8 @@ class Parser:
         parser_fn: Callable,
         label: str,
     ) -> int:
-        raw_items = parser_fn(self.selenium)
+        raw_items = await parser_fn()
+        logger.info([item.name for item in raw_items])
         logger.info(f"[Parser] Found {len(raw_items)} {label} from {self.adapter.site_name}")
         return await self._insert_unique(
             model,
@@ -137,7 +125,19 @@ class Parser:
         Args:
             max_videos: maximum number of videos to enrich (None = process all).
         """
-        query = Video.find(Video.site == self.adapter.site_name, Video.javguru_status == "added")  # noqa E711
+        query = Video.find(
+            Video.site == self.adapter.site_name,
+            Video.javguru_status == "added",
+            Video.empty_actresses_source == False,  # noqa E712
+        )
+
+        # query = Video.find(
+        #     Video.site == self.adapter.site_name,
+        #     Video.javguru_status == "parsed",
+        #     Video.actresses == [],
+        #     Video.empty_actresses_source == False,  # noqa E712
+        # )
+
         videos = await query.to_list()
         if max_videos:
             videos = videos[:max_videos]
@@ -185,7 +185,9 @@ class Parser:
                         Model.site == self.adapter.site_name,
                     ).to_list()
 
-                if parsed.actresses:
+                if parsed.actresses == []:
+                    video.empty_actresses_source = True
+                elif parsed.actresses:
                     video.actresses = await Model.find(
                         In(Model.name, parsed.actresses),
                         Model.type == "actress",
@@ -231,6 +233,10 @@ class Parser:
 
         videos = Video.find({enrich_field: False, "jav_code": {"$ne": ""}}).limit(max_videos)
 
+        # videos = Video.find({"type_javtiful": None, "javtiful_enriched": True, "jav_code": {"$ne": ""}}).limit(
+        #     max_videos
+        # )
+
         total = await videos.count()
         logger.info(f"[{site_name}] Videos pending enrichment: {total}, processing max {max_videos}")
 
@@ -259,6 +265,14 @@ class Parser:
                     enriched.actresses = await Model.find(
                         In(Model.name, enriched.actresses), Model.type == "actress", Model.site == site_name
                     ).to_list()
+
+                # --- normalize type_javtiful ---
+                if hasattr(enriched, "type_javtiful"):
+                    value = getattr(enriched, "type_javtiful", None)
+                    if not value:
+                        enriched.type_javtiful = ""
+                    else:
+                        enriched.type_javtiful = str(value)
 
                 setattr(enriched, enrich_field, True)
                 await enriched.save()

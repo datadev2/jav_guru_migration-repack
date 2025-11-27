@@ -53,7 +53,11 @@ class Config(BaseSettings):
 
 Rules
 0. Important: Research porn and JAV sites and implement their lingo.
-1. Start with the video code in square brackets. Example: [INCT-001].
+1. You must copy the code exactly as it appears in the input. 
+No corrections, no normalization, no inference, no replacements, no guessing. 
+The code must appear 1:1, character-for-character, including typos, casing, numbers, symbols, and formatting. 
+Using any other code is strictly forbidden. 
+Example: if the input contains [INCT-001], you must output a title starting with [INCT-001] exactly.
 2. Include 1–2 performer names from the provided list. If more names are given, choose the best fit.
 3. Select 1–2 relevant tags and integrate them naturally.
 4. Only use tags exactly as provided. Do not invent, reinterpret, or guess.
@@ -85,8 +89,6 @@ Attribute tags correctly (e.g., “Shaved Ichigo Aoi”).
 25. Pretend every title you give is intended for a big porn site like Pornhub or similar and 
 write it accordingly while keeping JAV structure and topics in mind.
 26. Double-check compliance with all rules before outputting. If a violation occurs, rewrite until it is fixed.
-27. Output format: When multiple videos are sent together, 
-reply with all rewritten titles in the same order, separated by the " | " symbol.
 
 Examples
 Example 1 input: [INCT-001] Doll Play Ichigo Aoi dressed with 

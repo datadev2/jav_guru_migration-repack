@@ -28,17 +28,26 @@ if site not in SITE_TO_ADAPTER:
 adapter = SITE_TO_ADAPTER[site]()
 
 
-async def pipeline_init(start_page: int, end_page: int, max_videos: int):
+async def pipeline_guru_pages(start_page: int, end_page: int):
     await init_mongo()
     try:
-        async with Parser(adapter=adapter) as parser:
+        async with Parser(adapter=GuruAdapter()) as parser:
             await parser.get_videos(start_page=start_page, end_page=end_page)
-            await parser.get_videos_data(max_videos=max_videos)
-
-        logger.info("Pipeline finished successfully.")
+        logger.info(f"[GURU] Parsed pages {start_page} → {end_page}")
     except Exception as e:
         traceback.print_exc()
-        logger.error("Pipeline failed", e, exc_info=True)
+        logger.error("[GURU] Page pipeline failed", e, exc_info=True)
+
+
+async def pipeline_guru_enrich(max_videos: int):
+    await init_mongo()
+    try:
+        async with Parser(adapter=GuruAdapter()) as parser:
+            await parser.get_videos_data(max_videos=max_videos)
+        logger.info(f"[GURU] Enriched {max_videos} videos")
+    except Exception as e:
+        traceback.print_exc()
+        logger.error("[GURU] Enrichment pipeline failed", e, exc_info=True)
 
 
 async def pipeline_enrich(site_name: Literal["javct", "javtiful"], max_videos: int):
@@ -56,10 +65,10 @@ async def pipeline_enrich(site_name: Literal["javct", "javtiful"], max_videos: i
         logger.error("Pipeline failed: {}", e, exc_info=True)
 
 
-async def pipeline_titles():
+async def pipeline_titles(max_batches: int = 0):
     await init_mongo()
     generator = TitleGenerator()
-    await generator.run_pipeline()
+    await generator.run_pipeline(max_batches=max_batches)
 
 
 async def pipeline_thumbnails():
@@ -86,6 +95,7 @@ def save_next_range(current_data):
         "end_page": end_candidate,
         "step": step,
         "max_videos": current_data["max_videos"],
+        "max_batches": current_data["max_batches"],
     }
 
     with open(RANGE_PATH, "w") as f:
@@ -94,13 +104,16 @@ def save_next_range(current_data):
 
 async def main():
     # ---
-    # current = get_current_range()
-    # await pipeline_init(
+    current = get_current_range()
+
+    # await pipeline_guru_pages(
     #     start_page=current["start_page"],
-    #     end_page=current["end_page"],
-    #     max_videos=current["max_videos"]
+    #     end_page=current["end_page"]
     # )
-    # save_next_range(current)
+
+    await pipeline_guru_enrich(max_videos=current["max_videos"])
+
+    save_next_range(current)
     # ---
 
     # await pipeline_enrich(config.SITE_NAME, max_videos=1000)
@@ -110,7 +123,7 @@ async def main():
     # await pipeline_enrich("javtiful", max_videos=14)
     # --- Fast run ---
 
-    await pipeline_titles()
+    # await pipeline_titles(max_batches=current["max_batches"])
     # await pipeline_thumbnails()
 
 
