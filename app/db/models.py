@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Literal
-from urllib.parse import urlparse
 
 from beanie import Document, Link
 from pydantic import BaseModel, Field, HttpUrl, model_validator
@@ -86,7 +85,7 @@ class Video(Document):
     directors: list[Link[Model]] = Field(default_factory=list)
 
     empty_actresses_source: bool = False
-    
+
     studio: Link[Studio] | None = None
     release_date: datetime | None = None
     uncensored: bool | None = None
