@@ -27,12 +27,17 @@ class KVS:
             "limit": limit,
             "feed_format": "json",
         }
-        async with aiohttp.ClientSession() as session:
-            request = await session.get(url, params=params)
-            status = request.status
-            if status == 200:
-                return await request.json()
-            return []
+        timeout = aiohttp.ClientTimeout(total=10)
+        for _ in range(3):
+            try:
+                async with aiohttp.ClientSession(timeout=timeout) as session:
+                    r = await session.get(url, params=params)
+                    if r.status == 200:
+                        return await r.json()
+                    return []
+            except Exception:
+                await asyncio.sleep(1)
+        return []
 
     async def _gather_feed(self) -> list[dict]:
         """Never call in production. Left only for rare manual checks."""
@@ -43,10 +48,13 @@ class KVS:
             tasks = [self._get_feed_part(limit=limit, offset=offset + i * limit) for i in range(10)]
             offset += limit * 10
 
-            parts = await asyncio.gather(*tasks)
+            parts = await asyncio.gather(*tasks, return_exceptions=True)
 
             empty_chunks = 0
             for body in parts:
+                if isinstance(body, Exception):
+                    empty_chunks += 1
+                    continue
                 if not body:
                     empty_chunks += 1
                 else:
