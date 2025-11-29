@@ -16,14 +16,14 @@ KVS_RANGE_PATH = Path(__file__).parent / "kvs_range.json"
 
 def get_kvs_limit() -> int:
     if not KVS_RANGE_PATH.exists():
-        return 10
+        return 100
     try:
         with KVS_RANGE_PATH.open(encoding="utf-8") as file:
             data = json.load(file)
-        value = data.get("limit", 10)
+        value = data.get("limit", 100)
         return int(value)
     except (ValueError, json.JSONDecodeError):
-        return 10
+        return 100
 
 
 async def kvs_cleanup_chunk():
