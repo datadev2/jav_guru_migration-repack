@@ -6,6 +6,8 @@ from loguru import logger
 
 from app.db.database import init_mongo
 from app.db.models import KVSImportConfirm, Video
+from app.infra.kvs import kvs_feed
+from app.infra.kvs_cleanup import kvs_cleanup_chunk, process_full_kvs_feed
 from app.utils.csv_dump import csv_dump
 
 
@@ -67,3 +69,19 @@ async def mark_video_sources_as_imported(payload: KVSImportConfirm):
         await video.save()
         updated += 1
     return {"updated": updated}
+
+
+@app.get("/kvs-feed")
+async def fetch_kvs_feed():
+    items = await kvs_feed.get_full_feed()
+    return {"count": len(items)}
+
+
+@app.get("/cleanup-candidates")
+async def cleanup_debug():
+    return await kvs_cleanup_chunk()
+
+
+@app.post("/cleanup-full")
+async def cleanup_full():
+    return await process_full_kvs_feed()

@@ -1,4 +1,4 @@
-from pydantic import Field, MongoDsn, RedisDsn, SecretStr, field_validator
+from pydantic import Field, HttpUrl, MongoDsn, RedisDsn, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -34,6 +34,9 @@ class Config(BaseSettings):
     G_SPREADSHEET_CREDS: str
 
     PROXY_POOL: str | list[str] = Field(default_factory=list)
+
+    KVS_FEED_ENDPOINT: HttpUrl
+    KVS_FEED_PASSWORD: SecretStr
 
     @field_validator("PROXY_POOL", mode="before")
     @classmethod

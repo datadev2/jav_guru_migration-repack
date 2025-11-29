@@ -85,7 +85,7 @@ class Video(Document):
     directors: list[Link[Model]] = Field(default_factory=list)
 
     empty_actresses_source: bool = False
-    
+
     studio: Link[Studio] | None = None
     release_date: datetime | None = None
     uncensored: bool | None = None
@@ -97,7 +97,7 @@ class Video(Document):
     javct_enriched: bool = False
     javtiful_enriched: bool = False
 
-    javguru_status: Literal["added", "parsed", "downloading", "downloaded", "failed", "imported", "deleted"]
+    javguru_status: Literal["added", "parsed"]
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
